@@ -7,6 +7,10 @@ services:
     ports:
       - "10019:10019"
     environment:
-      - PBS_API_TOKEN=
-      - PBS_ENDPOINT=https://pbs-server:8007
-      - PBS_INSECURE=false
+      - PBS_API_TOKEN=07c86932-6303-4d95-827a-ed4b7b04dab2
+      - PBS_ENDPOINT=https://192.168.1.164:8007
+      - PBS_LOGLEVEL=debug
+      - PBS_USERNAME=root@pam
+      - PBS_API_TOKEN_NAME=pbs-exporter
+      - PBS_INSECURE=true
+      - PBS_TIMEOUT=10s

@@ -43,6 +43,8 @@ MUST preserve metric names, labels, and help strings.
 | REQ-RT-3 | Runtime dependencies are limited to `prom-client`, `undici`, `commander`, and `parse-duration`. | Inspect `package.json` `dependencies`. **[offline-ok]** |
 | REQ-RT-4 | Config-loading logic lives in [`src/config.ts`](src/config.ts) (separate from `main.ts`) and is covered by vitest unit tests run via `npm run tests:unit`. | `npm run tests:unit` exits 0 with all tests passing. **[offline-ok]** |
 | REQ-RT-5 | `npm run tests:unit:coverage` generates coverage reports under `coverage/`: HTML (`index.html`), Cobertura XML (`cobertura-coverage.xml`, for GitHub) and LCOV (`lcov.info`, for SonarQube via `sonar.javascript.lcov.reportPaths`). | Run it; assert the three artifacts exist. **[offline-ok]** |
+| REQ-RT-6 | All `.ts` files lint cleanly under ESLint 10 (flat config in [`eslint.config.mjs`](eslint.config.mjs), using `@eslint/js` + `typescript-eslint` recommended rules). | `npm run lint:eslint` exits 0. **[offline-ok]** |
+| REQ-RT-7 | All `.ts` files conform to Prettier formatting. | `npm run lint:prettier` exits 0 (`npm run format` auto-fixes). **[offline-ok]** |
 
 ---
 

@@ -12,6 +12,9 @@
     "start": "node --env-file=.env src/main.ts",
     "dev": "node --env-file=.env --watch src/main.ts",
     "lint:ts": "tsc --noEmit",
+    "lint:eslint": "eslint \"**/*.ts\"",
+    "lint:prettier": "prettier --check \"**/*.ts\"",
+    "format": "prettier --write \"**/*.ts\"",
     "tests:unit": "vitest run",
     "tests:unit:coverage": "vitest run --coverage",
     "build": "tsc"
@@ -23,9 +26,13 @@
     "undici": "^7.16.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^24.0.0",
     "@vitest/coverage-v8": "^4.1.9",
+    "eslint": "^10.5.0",
+    "prettier": "^3.8.4",
     "typescript": "^5.9.0",
+    "typescript-eslint": "^8.62.0",
     "vitest": "^4.1.9"
   }
 }

@@ -5,7 +5,11 @@
  * Uses the native `fetch`/`undici` HTTP stack and the `prom-client` library.
  */
 
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
 import { Agent } from "undici";
 import { Registry, Gauge, collectDefaultMetrics } from "prom-client";
 import { type Config, loadConfig, parseDuration, parseBool } from "./config.ts";
@@ -94,21 +98,38 @@ type HostResponse = {
 
 function buildMetrics(registry: Registry) {
   const g = (name: string, help: string, labelNames: string[] = []) =>
-    new Gauge({ name: `${PROM_NAMESPACE}_${name}`, help, labelNames, registers: [registry] });
+    new Gauge({
+      name: `${PROM_NAMESPACE}_${name}`,
+      help,
+      labelNames,
+      registers: [registry],
+    });
 
   return {
     up: g("up", "Was the last query of PBS successful."),
-    version: g("version", "Version of the PBS installation.", ["version", "repoid", "release"]),
-    available: g("available", "The available bytes of the underlying storage.", ["datastore"]),
-    size: g("size", "The size of the underlying storage in bytes.", ["datastore"]),
+    version: g("version", "Version of the PBS installation.", [
+      "version",
+      "repoid",
+      "release",
+    ]),
+    available: g(
+      "available",
+      "The available bytes of the underlying storage.",
+      ["datastore"],
+    ),
+    size: g("size", "The size of the underlying storage in bytes.", [
+      "datastore",
+    ]),
     used: g("used", "The used bytes of the underlying storage.", ["datastore"]),
-    snapshotCount: g("snapshot_count", "The total number of backups.", ["datastore", "namespace"]),
-    snapshotVmCount: g("snapshot_vm_count", "The total number of backups per VM.", [
+    snapshotCount: g("snapshot_count", "The total number of backups.", [
       "datastore",
       "namespace",
-      "vm_id",
-      "vm_name",
     ]),
+    snapshotVmCount: g(
+      "snapshot_vm_count",
+      "The total number of backups per VM.",
+      ["datastore", "namespace", "vm_id", "vm_name"],
+    ),
     snapshotVmLastTimestamp: g(
       "snapshot_vm_last_timestamp",
       "The timestamp of the last backup of a VM.",
@@ -124,11 +145,16 @@ function buildMetrics(registry: Registry) {
       "The verify status of the last backup of a VM.",
       ["datastore", "namespace", "vm_id", "vm_name"],
     ),
-    subscriptionStatus: g("host_subscription_status", "The subscription status of the host.", ["status"]),
-    subscriptionInfo: g("host_subscription_info", "The subscription info of the host.", [
-      "productname",
-      "status",
-    ]),
+    subscriptionStatus: g(
+      "host_subscription_status",
+      "The subscription status of the host.",
+      ["status"],
+    ),
+    subscriptionInfo: g(
+      "host_subscription_info",
+      "The subscription info of the host.",
+      ["productname", "status"],
+    ),
     subscriptionDueTimestamp: g(
       "host_subscription_due_timestamp_seconds",
       "The subscription next due timestamp (unix seconds) of the host.",
@@ -141,9 +167,18 @@ function buildMetrics(registry: Registry) {
     hostSwapFree: g("host_swap_free", "The free swap of the host."),
     hostSwapTotal: g("host_swap_total", "The total swap of the host."),
     hostSwapUsed: g("host_swap_used", "The used swap of the host."),
-    hostDiskAvailable: g("host_disk_available", "The available disk of the local root disk in bytes."),
-    hostDiskTotal: g("host_disk_total", "The total disk of the local root disk in bytes."),
-    hostDiskUsed: g("host_disk_used", "The used disk of the local root disk in bytes."),
+    hostDiskAvailable: g(
+      "host_disk_available",
+      "The available disk of the local root disk in bytes.",
+    ),
+    hostDiskTotal: g(
+      "host_disk_total",
+      "The total disk of the local root disk in bytes.",
+    ),
+    hostDiskUsed: g(
+      "host_disk_used",
+      "The used disk of the local root disk in bytes.",
+    ),
     hostUptime: g("host_uptime", "The uptime of the host."),
     hostIoWait: g("host_io_wait", "The io wait of the host."),
     hostLoad1: g("host_load1", "The load for 1 minute of the host."),
@@ -162,13 +197,20 @@ class Exporter {
   private readonly endpoint: string;
   private readonly authorizationHeader: string;
 
-  constructor(endpoint: string, username: string, apitoken: string, apitokenname: string) {
+  constructor(
+    endpoint: string,
+    username: string,
+    apitoken: string,
+    apitokenname: string,
+  ) {
     this.endpoint = endpoint;
     this.authorizationHeader = `PBSAPIToken=${username}!${apitokenname}:${apitoken}`;
   }
 
   /** Perform an authenticated GET and return the parsed JSON body. */
-  private async request<T>(path: string): Promise<{ status: number; body: string; json: () => T }> {
+  private async request<T>(
+    path: string,
+  ): Promise<{ status: number; body: string; json: () => T }> {
     const url = this.endpoint + path;
     log.debug(`Request URL: ${sanitize(url)}`);
 
@@ -179,7 +221,9 @@ class Exporter {
     } as RequestInit);
 
     const body = await resp.text();
-    log.debug(`Status code ${resp.status} returned from endpoint: ${sanitize(this.endpoint)}`);
+    log.debug(
+      `Status code ${resp.status} returned from endpoint: ${sanitize(this.endpoint)}`,
+    );
     return { status: resp.status, body, json: () => JSON.parse(body) as T };
   }
 
@@ -198,7 +242,9 @@ class Exporter {
 
     const usage = await this.request<DatastoreResponse>(DATASTORE_USAGE_API);
     if (usage.status !== 200) {
-      throw new Error(`Status code ${usage.status} returned from endpoint: ${this.endpoint}`);
+      throw new Error(
+        `Status code ${usage.status} returned from endpoint: ${this.endpoint}`,
+      );
     }
 
     for (const datastore of usage.json().data) {
@@ -212,10 +258,15 @@ class Exporter {
   private async getVersion(m: Metrics): Promise<void> {
     const resp = await this.request<VersionResponse>(VERSION_API);
     if (resp.status !== 200) {
-      throw new Error(`Status code ${resp.status} returned from endpoint: ${this.endpoint}`);
+      throw new Error(
+        `Status code ${resp.status} returned from endpoint: ${this.endpoint}`,
+      );
     }
     const d = resp.json().data;
-    m.version.set({ version: d.version, repoid: d.repoid, release: d.release }, 1);
+    m.version.set(
+      { version: d.version, repoid: d.repoid, release: d.release },
+      1,
+    );
   }
 
   private async getNodeSubscriptionMetrics(m: Metrics): Promise<void> {
@@ -223,7 +274,9 @@ class Exporter {
       `${NODE_API}/localhost/subscription`,
     );
     if (resp.status !== 200) {
-      throw new Error(`Status code ${resp.status} returned from endpoint: ${this.endpoint}`);
+      throw new Error(
+        `Status code ${resp.status} returned from endpoint: ${this.endpoint}`,
+      );
     }
 
     const data = resp.json().data ?? {};
@@ -241,7 +294,14 @@ class Exporter {
     m.subscriptionInfo.set({ productname: productName, status: statusStr }, 1);
     m.subscriptionDueTimestamp.set({ productname: productName }, dueTs);
 
-    const statuses = ["new", "notfound", "active", "invalid", "expired", "suspended"];
+    const statuses = [
+      "new",
+      "notfound",
+      "active",
+      "invalid",
+      "expired",
+      "suspended",
+    ];
     for (const s of statuses) {
       m.subscriptionStatus.set({ status: s }, statusStr === s ? 1 : 0);
     }
@@ -250,9 +310,13 @@ class Exporter {
   private async getNodeMetrics(m: Metrics): Promise<void> {
     // NOTE: The API requires a node name (not the IP), but any name works, so we use "localhost".
     // see: https://pbs.proxmox.com/docs/api-viewer/index.html#/nodes/{node}
-    const resp = await this.request<HostResponse>(`${NODE_API}/localhost/status`);
+    const resp = await this.request<HostResponse>(
+      `${NODE_API}/localhost/status`,
+    );
     if (resp.status !== 200) {
-      throw new Error(`Status code ${resp.status} returned from endpoint: ${this.endpoint}`);
+      throw new Error(
+        `Status code ${resp.status} returned from endpoint: ${this.endpoint}`,
+      );
     }
 
     const d = resp.json().data;
@@ -273,7 +337,10 @@ class Exporter {
     m.hostLoad15.set(d.loadavg[2]);
   }
 
-  private async getDatastoreMetric(datastore: DatastoreEntry, m: Metrics): Promise<void> {
+  private async getDatastoreMetric(
+    datastore: DatastoreEntry,
+    m: Metrics,
+  ): Promise<void> {
     log.debug(`--Store ${datastore.store}`);
     log.debug(`--Avail ${datastore.avail}`);
     log.debug(`--Total ${datastore.total}`);
@@ -288,11 +355,18 @@ class Exporter {
     );
 
     if (resp.status !== 200) {
-      if (resp.status === 400 && /datastore is being deleted/i.test(resp.body)) {
-        log.info(`Datastore: ${datastore.store} is being deleted, Skip scrape datastore metric`);
+      if (
+        resp.status === 400 &&
+        /datastore is being deleted/i.test(resp.body)
+      ) {
+        log.info(
+          `Datastore: ${datastore.store} is being deleted, Skip scrape datastore metric`,
+        );
         return;
       }
-      throw new Error(`--Status code ${resp.status} returned from endpoint: ${this.endpoint}`);
+      throw new Error(
+        `--Status code ${resp.status} returned from endpoint: ${this.endpoint}`,
+      );
     }
 
     for (const namespace of resp.json().data) {
@@ -300,14 +374,20 @@ class Exporter {
     }
   }
 
-  private async getNamespaceMetric(datastore: string, namespace: string, m: Metrics): Promise<void> {
+  private async getNamespaceMetric(
+    datastore: string,
+    namespace: string,
+    m: Metrics,
+  ): Promise<void> {
     log.debug(`----Namespace ${namespace}`);
 
     const resp = await this.request<SnapshotResponse>(
       `${DATASTORE_API}/${datastore}/snapshots?ns=${namespace}`,
     );
     if (resp.status !== 200) {
-      throw new Error(`----Status code ${resp.status} returned from endpoint: ${this.endpoint}`);
+      throw new Error(
+        `----Status code ${resp.status} returned from endpoint: ${this.endpoint}`,
+      );
     }
 
     const snapshots = resp.json().data;
@@ -332,7 +412,10 @@ class Exporter {
         throw new Error(`No snapshot found with backupID ${vmID}`);
       }
       m.snapshotVmLastTimestamp.set(labels, last.timestamp);
-      m.snapshotVmLastAge.set(labels, Math.floor(Date.now() / 1000) - last.timestamp);
+      m.snapshotVmLastAge.set(
+        labels,
+        Math.floor(Date.now() / 1000) - last.timestamp,
+      );
       m.snapshotVmLastVerify.set(labels, last.verify === "ok" ? 1 : 0);
     }
   }
@@ -345,12 +428,17 @@ function findLastSnapshotWithBackupID(
   let lastTimestamp = 0;
   let lastVerify = "";
   for (const snapshot of snapshots) {
-    if (snapshot["backup-id"] === backupID && snapshot["backup-time"] > lastTimestamp) {
+    if (
+      snapshot["backup-id"] === backupID &&
+      snapshot["backup-time"] > lastTimestamp
+    ) {
       lastTimestamp = snapshot["backup-time"];
       lastVerify = snapshot.verification?.state ?? "";
     }
   }
-  return lastTimestamp !== 0 ? { timestamp: lastTimestamp, verify: lastVerify } : null;
+  return lastTimestamp !== 0
+    ? { timestamp: lastTimestamp, verify: lastVerify }
+    : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -361,13 +449,17 @@ function main(): void {
   const config = loadConfig();
 
   if (config.showVersion) {
-    console.log(`PBS Exporter Version: ${Version}, Commit: ${Commit}, Build Time: ${BuildTime}`);
+    console.log(
+      `PBS Exporter Version: ${Version}, Commit: ${Commit}, Build Time: ${BuildTime}`,
+    );
     process.exit(0);
   }
 
   loglevel = config.loglevel;
 
-  log.info(`Starting PBS Exporter ${Version}, commit ${Commit}, built at ${BuildTime}`);
+  log.info(
+    `Starting PBS Exporter ${Version}, commit ${Commit}, built at ${BuildTime}`,
+  );
 
   // Register default Node.js process/runtime metrics once.
   collectDefaultMetrics({ register: defaultRegistry });
@@ -376,14 +468,18 @@ function main(): void {
   try {
     insecureBool = parseBool(config.insecure);
   } catch (err) {
-    log.error(`Unable to parse insecure: ${err instanceof Error ? err.message : String(err)}`);
+    log.error(
+      `Unable to parse insecure: ${err instanceof Error ? err.message : String(err)}`,
+    );
     process.exit(1);
   }
 
   try {
     timeoutMs = parseDuration(config.timeout);
   } catch (err) {
-    log.error(`Unable to parse timeout: ${err instanceof Error ? err.message : String(err)}`);
+    log.error(
+      `Unable to parse timeout: ${err instanceof Error ? err.message : String(err)}`,
+    );
     process.exit(1);
   }
 
@@ -422,7 +518,10 @@ function main(): void {
   server.listen(port, host);
 }
 
-function parseListenAddress(addr: string): { host: string | undefined; port: number } {
+function parseListenAddress(addr: string): {
+  host: string | undefined;
+  port: number;
+} {
   const idx = addr.lastIndexOf(":");
   const host = idx > 0 ? addr.slice(0, idx) : undefined;
   const port = Number.parseInt(addr.slice(idx + 1), 10);
@@ -450,7 +549,12 @@ async function handleRequest(
     // Fresh registry per scrape so old label series are not retained.
     const registry = new Registry();
     const metrics = buildMetrics(registry);
-    const exporter = new Exporter(target, config.username, config.apitoken, config.apitokenname);
+    const exporter = new Exporter(
+      target,
+      config.username,
+      config.apitoken,
+      config.apitokenname,
+    );
     await exporter.collect(metrics);
 
     // Combine PBS scrape metrics with the persistent Node.js process metrics.

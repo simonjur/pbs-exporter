@@ -66,13 +66,29 @@ export function loadConfig(
     .name("pbs-exporter")
     .description("Export Proxmox Backup Server metrics for Prometheus")
     .option("--pbs.endpoint <endpoint>", "Proxmox Backup Server endpoint", "")
-    .option("--pbs.username <username>", "Proxmox Backup Server username", "root@pam")
+    .option(
+      "--pbs.username <username>",
+      "Proxmox Backup Server username",
+      "root@pam",
+    )
     .option("--pbs.api.token <token>", "Proxmox Backup Server API token", "")
-    .option("--pbs.api.token.name <name>", "Proxmox Backup Server API token name", "pbs-exporter")
+    .option(
+      "--pbs.api.token.name <name>",
+      "Proxmox Backup Server API token name",
+      "pbs-exporter",
+    )
     .option("--pbs.timeout <duration>", "Proxmox Backup Server timeout", "5s")
     .option("--pbs.insecure <bool>", "Proxmox Backup Server insecure", "false")
-    .option("--pbs.metrics-path <path>", "Path under which to expose metrics", "/metrics")
-    .option("--pbs.listen-address <address>", "Address on which to expose metrics", ":10019")
+    .option(
+      "--pbs.metrics-path <path>",
+      "Path under which to expose metrics",
+      "/metrics",
+    )
+    .option(
+      "--pbs.listen-address <address>",
+      "Address on which to expose metrics",
+      ":10019",
+    )
     .option("--pbs.loglevel <level>", "Loglevel", "info")
     .option("--version", "Show version and exit", false)
     .parse(argv);
@@ -97,13 +113,16 @@ export function loadConfig(
   if (env.PBS_ENDPOINT) config.endpoint = env.PBS_ENDPOINT;
 
   if (env.PBS_USERNAME) config.username = env.PBS_USERNAME;
-  else if (env.PBS_USERNAME_FILE) config.username = readSecretFile(env.PBS_USERNAME_FILE);
+  else if (env.PBS_USERNAME_FILE)
+    config.username = readSecretFile(env.PBS_USERNAME_FILE);
 
   if (env.PBS_API_TOKEN_NAME) config.apitokenname = env.PBS_API_TOKEN_NAME;
-  else if (env.PBS_API_TOKEN_NAME_FILE) config.apitokenname = readSecretFile(env.PBS_API_TOKEN_NAME_FILE);
+  else if (env.PBS_API_TOKEN_NAME_FILE)
+    config.apitokenname = readSecretFile(env.PBS_API_TOKEN_NAME_FILE);
 
   if (env.PBS_API_TOKEN) config.apitoken = env.PBS_API_TOKEN;
-  else if (env.PBS_API_TOKEN_FILE) config.apitoken = readSecretFile(env.PBS_API_TOKEN_FILE);
+  else if (env.PBS_API_TOKEN_FILE)
+    config.apitoken = readSecretFile(env.PBS_API_TOKEN_FILE);
 
   if (env.PBS_TIMEOUT) config.timeout = env.PBS_TIMEOUT;
   if (env.PBS_INSECURE) config.insecure = env.PBS_INSECURE;

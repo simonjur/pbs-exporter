@@ -2,7 +2,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type Config, loadConfig, parseBool, parseDuration, readSecretFile } from "./config.ts";
+import {
+  type Config,
+  loadConfig,
+  parseBool,
+  readSecretFile,
+} from "./config.ts";
 
 /** Build a process-style argv ("node", "script", ...flags) for loadConfig. */
 function argv(...flags: string[]): string[] {
@@ -20,7 +25,8 @@ function secretFile(contents: string): string {
 }
 
 afterEach(() => {
-  while (tmpFiles.length) rmSync(tmpFiles.pop()!, { recursive: true, force: true });
+  while (tmpFiles.length)
+    rmSync(tmpFiles.pop()!, { recursive: true, force: true });
 });
 
 describe("parseBool", () => {
@@ -43,7 +49,9 @@ describe("parseBool", () => {
 
 describe("readSecretFile", () => {
   it("returns only the first line", () => {
-    expect(readSecretFile(secretFile("topsecret\nsecondline\n"))).toBe("topsecret");
+    expect(readSecretFile(secretFile("topsecret\nsecondline\n"))).toBe(
+      "topsecret",
+    );
   });
 
   it("handles a file without a trailing newline", () => {
@@ -98,10 +106,13 @@ describe("loadConfig", () => {
   });
 
   it("lets environment variables override flags", () => {
-    const c = loadConfig(argv("--pbs.metrics-path=/flag", "--pbs.endpoint=http://flag"), {
-      PBS_METRICS_PATH: "/env",
-      PBS_ENDPOINT: "http://env",
-    });
+    const c = loadConfig(
+      argv("--pbs.metrics-path=/flag", "--pbs.endpoint=http://flag"),
+      {
+        PBS_METRICS_PATH: "/env",
+        PBS_ENDPOINT: "http://env",
+      },
+    );
     expect(c.metricsPath).toBe("/env");
     expect(c.endpoint).toBe("http://env");
   });

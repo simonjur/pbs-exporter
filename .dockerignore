@@ -1,0 +1,14 @@
+.git
+.github
+.idea
+node_modules
+dist
+coverage
+*.env
+.env
+# Legacy Go implementation (not used by the Node image)
+main.go
+go.mod
+go.sum
+Makefile
+vendor

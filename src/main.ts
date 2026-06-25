@@ -15,7 +15,7 @@ import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
 import { Agent } from "undici";
 import { Registry, Gauge, collectDefaultMetrics } from "prom-client";
-import { type Config, loadConfig, parseDuration, parseBool } from "./config.ts";
+import { type Config, loadConfig, parseBool } from "./config.ts";
 import { getStatuses, getSummary, recordScrape, seedTarget } from "./status.ts";
 
 const PROM_NAMESPACE = "pbs";
@@ -512,7 +512,15 @@ function findLastSnapshotWithBackupID(
 // ---------------------------------------------------------------------------
 
 function main(): void {
-  const config = loadConfig();
+  let config: Config;
+  try {
+    config = loadConfig();
+  } catch (err) {
+    log.error(
+      `Unable to load configuration: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    process.exit(1);
+  }
 
   if (config.showVersion) {
     console.log(
@@ -540,14 +548,7 @@ function main(): void {
     process.exit(1);
   }
 
-  try {
-    timeoutMs = parseDuration(config.timeout);
-  } catch (err) {
-    log.error(
-      `Unable to parse timeout: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    process.exit(1);
-  }
+  timeoutMs = config.timeout;
 
   // Configure the TLS dispatcher (allow self-signed certs when insecure).
   dispatcher = new Agent({
@@ -557,8 +558,8 @@ function main(): void {
   if (loglevel === "debug") {
     log.debug(`Using connection endpoint: ${sanitize(config.endpoint)}`);
     log.debug(`Using connection username: ${config.username}`);
-    log.debug(`Using connection apitoken: ${config.apitoken}`);
-    log.debug(`Using connection apitokenname: ${config.apitokenname}`);
+    log.debug(`Using connection apitoken: ${config.apiToken}`);
+    log.debug(`Using connection apitokenname: ${config.apiTokenName}`);
     log.debug(`Using connection timeout: ${timeoutMs}ms`);
     log.debug(`Using connection insecure: ${insecureBool}`);
     log.debug(`Using metrics path: ${config.metricsPath}`);
@@ -620,8 +621,8 @@ async function handleRequest(
     const exporter = new Exporter(
       target,
       config.username,
-      config.apitoken,
-      config.apitokenname,
+      config.apiToken,
+      config.apiTokenName,
     );
     const result = await exporter.collect(metrics);
     recordScrape({

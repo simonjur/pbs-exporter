@@ -79,8 +79,15 @@ Precedence (lowest → highest): built-in default → CLI flag → environment v
 
 ## 5. Scrape lifecycle
 
+A "scrape" is request-driven: each `GET <metrics-path>` triggers exactly one PBS
+collection for the resolved target. The exporter has **no internal timer or background
+polling loop** — scrape frequency is determined solely by the client (e.g. Prometheus
+`scrape_interval`). All "per scrape" requirements below describe what happens during one
+such request.
+
 | ID | Requirement | Verify |
 |----|-------------|--------|
+| REQ-SCRAPE-0 | A scrape is performed on demand: each `GET <metrics-path>` triggers exactly one PBS collection for the resolved target. The exporter runs no internal scheduler/timer; with no client requests it makes no PBS API calls. | With no requests, no PBS API calls occur (debug log is silent); each `/metrics` request produces exactly one collection. **[offline-ok]** |
 | REQ-SCRAPE-1 | PBS metrics are built on a **fresh registry per scrape**, so labels that disappear between scrapes are not retained as stale series. | Two scrapes against different targets do not accumulate each other's datastore label series. **[needs-pbs]** |
 | REQ-SCRAPE-2 | On a fully successful collection, `pbs_up` = 1. | `GET /metrics` against a working PBS → `pbs_up 1`. **[needs-pbs]** |
 | REQ-SCRAPE-3 | On any collection error (network, non-200, parse), `pbs_up` = 0 and the error is logged; the endpoint still returns 200 with whatever metrics were gathered. | `GET /metrics?target=http://localhost:1` → `pbs_up 0`, HTTP 200. **[offline-ok]** |

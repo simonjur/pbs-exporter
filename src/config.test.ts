@@ -71,9 +71,9 @@ describe("loadConfig", () => {
     expect(c).toEqual<Config>({
       endpoint: "",
       username: "root@pam",
-      apitoken: "",
-      apitokenname: "pbs-exporter",
-      timeout: "5s",
+      apiToken: "",
+      apiTokenName: "pbs-exporter",
+      timeout: 5000,
       insecure: "false",
       metricsPath: "/metrics",
       listenAddress: ":10019",
@@ -96,7 +96,7 @@ describe("loadConfig", () => {
       argv("--pbs.api.token.name=mytoken", "--pbs.listen-address=:9999"),
       noEnv,
     );
-    expect(c.apitokenname).toBe("mytoken");
+    expect(c.apiTokenName).toBe("mytoken");
     expect(c.listenAddress).toBe(":9999");
   });
 
@@ -123,9 +123,9 @@ describe("loadConfig", () => {
       PBS_USERNAME_FILE: secretFile("file-user"),
       PBS_API_TOKEN_NAME_FILE: secretFile("file-token-name"),
     });
-    expect(c.apitoken).toBe("file-token");
+    expect(c.apiToken).toBe("file-token");
     expect(c.username).toBe("file-user");
-    expect(c.apitokenname).toBe("file-token-name");
+    expect(c.apiTokenName).toBe("file-token-name");
   });
 
   it("prefers the direct env var over its *_FILE counterpart", () => {
@@ -133,6 +133,17 @@ describe("loadConfig", () => {
       PBS_API_TOKEN: "direct-token",
       PBS_API_TOKEN_FILE: secretFile("file-token"),
     });
-    expect(c.apitoken).toBe("direct-token");
+    expect(c.apiToken).toBe("direct-token");
+  });
+
+  it("parses the timeout duration into milliseconds", () => {
+    expect(loadConfig(argv("--pbs.timeout=1m30s"), noEnv).timeout).toBe(90000);
+    expect(loadConfig(argv(), { PBS_TIMEOUT: "250ms" }).timeout).toBe(250);
+  });
+
+  it("throws on an invalid timeout duration", () => {
+    expect(() => loadConfig(argv(), { PBS_TIMEOUT: "nonsense" })).toThrow(
+      /invalid duration/,
+    );
   });
 });

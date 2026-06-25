@@ -12,9 +12,9 @@ import parse from "parse-duration";
 export type Config = {
   endpoint: string;
   username: string;
-  apitoken: string;
-  apitokenname: string;
-  timeout: string;
+  apiToken: string;
+  apiTokenName: string;
+  timeout: number;
   insecure: string;
   metricsPath: string;
   listenAddress: string;
@@ -26,13 +26,6 @@ export type Config = {
 export function readSecretFile(filename: string): string {
   const content = readFileSync(filename, "utf8");
   return content.split(/\r?\n/, 1)[0] ?? "";
-}
-
-/** Parse a duration string ("5s", "1m30s", "500ms") into milliseconds. */
-export function parseDuration(input: string): number {
-  const ms = parse(input);
-  if (ms === null) throw new Error(`invalid duration: ${input}`);
-  return ms;
 }
 
 /** Parse a Go-style boolean string ("1"/"t"/"true" / "0"/"f"/"false"). */
@@ -95,12 +88,18 @@ export function loadConfig(
 
   const opts = program.opts();
 
+  // Resolve the raw timeout string (default → flag → env), then parse to ms.
+  let timeoutRaw: string = opts["pbs.timeout"];
+  if (env.PBS_TIMEOUT) timeoutRaw = env.PBS_TIMEOUT;
+  const timeout = parse(timeoutRaw);
+  if (timeout === null) throw new Error(`invalid duration: ${timeoutRaw}`);
+
   const config: Config = {
     endpoint: opts["pbs.endpoint"],
     username: opts["pbs.username"],
-    apitoken: opts["pbs.api.token"],
-    apitokenname: opts["pbs.api.token.name"],
-    timeout: opts["pbs.timeout"],
+    apiToken: opts["pbs.api.token"],
+    apiTokenName: opts["pbs.api.token.name"],
+    timeout,
     insecure: opts["pbs.insecure"],
     metricsPath: opts["pbs.metricsPath"],
     listenAddress: opts["pbs.listenAddress"],
@@ -116,15 +115,14 @@ export function loadConfig(
   else if (env.PBS_USERNAME_FILE)
     config.username = readSecretFile(env.PBS_USERNAME_FILE);
 
-  if (env.PBS_API_TOKEN_NAME) config.apitokenname = env.PBS_API_TOKEN_NAME;
+  if (env.PBS_API_TOKEN_NAME) config.apiTokenName = env.PBS_API_TOKEN_NAME;
   else if (env.PBS_API_TOKEN_NAME_FILE)
-    config.apitokenname = readSecretFile(env.PBS_API_TOKEN_NAME_FILE);
+    config.apiTokenName = readSecretFile(env.PBS_API_TOKEN_NAME_FILE);
 
-  if (env.PBS_API_TOKEN) config.apitoken = env.PBS_API_TOKEN;
+  if (env.PBS_API_TOKEN) config.apiToken = env.PBS_API_TOKEN;
   else if (env.PBS_API_TOKEN_FILE)
-    config.apitoken = readSecretFile(env.PBS_API_TOKEN_FILE);
+    config.apiToken = readSecretFile(env.PBS_API_TOKEN_FILE);
 
-  if (env.PBS_TIMEOUT) config.timeout = env.PBS_TIMEOUT;
   if (env.PBS_INSECURE) config.insecure = env.PBS_INSECURE;
   if (env.PBS_METRICS_PATH) config.metricsPath = env.PBS_METRICS_PATH;
   if (env.PBS_LISTEN_ADDRESS) config.listenAddress = env.PBS_LISTEN_ADDRESS;

@@ -7,6 +7,7 @@ import {
   loadConfig,
   parseBool,
   readSecretFile,
+  validateTarget,
 } from "./config.ts";
 
 /** Build a process-style argv ("node", "script", ...flags) for loadConfig. */
@@ -167,4 +168,46 @@ describe("loadConfig", () => {
       /invalid log format/,
     );
   });
+
+  it("validates a configured endpoint scheme (SSRF guard)", () => {
+    expect(
+      loadConfig(argv(), { PBS_ENDPOINT: "https://pbs:8007" }).endpoint,
+    ).toBe("https://pbs:8007");
+    expect(() =>
+      loadConfig(argv(), { PBS_ENDPOINT: "file:///etc/passwd" }),
+    ).toThrow(/disallowed target URL scheme/);
+    expect(() => loadConfig(argv(), { PBS_ENDPOINT: "not-a-url" })).toThrow(
+      /invalid target URL/,
+    );
+  });
+
+  it("leaves an empty endpoint unvalidated (dynamic target mode)", () => {
+    expect(loadConfig(argv(), noEnv).endpoint).toBe("");
+  });
+});
+
+describe("validateTarget", () => {
+  it.each([
+    "http://localhost:8007",
+    "https://192.168.1.164:8007",
+    "https://pbs.example.com",
+  ])("accepts http(s) URL %j", (url) => {
+    expect(validateTarget(url)).toBe(url);
+  });
+
+  it.each([
+    "file:///etc/passwd",
+    "gopher://x",
+    "ftp://h/f",
+    "data:text/plain,x",
+  ])("rejects disallowed scheme %j", (url) => {
+    expect(() => validateTarget(url)).toThrow(/disallowed target URL scheme/);
+  });
+
+  it.each(["", "not-a-url", "//no-scheme"])(
+    "rejects unparseable URL %j",
+    (url) => {
+      expect(() => validateTarget(url)).toThrow(/invalid target URL/);
+    },
+  );
 });

@@ -13,7 +13,7 @@ import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
 import type { Dispatcher } from "undici";
 import { Registry } from "prom-client";
-import type { Config } from "./config.ts";
+import { type Config, validateTarget } from "./config.ts";
 import { log, sanitize } from "./log.ts";
 import { buildMetrics } from "./metrics.ts";
 import { Exporter } from "./exporter.ts";
@@ -79,14 +79,28 @@ export async function handleRequest(
 
   if (url.pathname === config.metricsPath) {
     // Determine the target endpoint.
-    let target: string;
+    let rawTarget: string;
     if (config.endpoint !== "") {
-      target = config.endpoint;
+      rawTarget = config.endpoint;
     } else {
-      target = url.searchParams.get("target") ?? "http://localhost:8007";
+      rawTarget = url.searchParams.get("target") ?? "http://localhost:8007";
     }
 
-    log.debug(`Using connection endpoint ${sanitize(target)}`);
+    log.debug(`Using connection endpoint ${sanitize(rawTarget)}`);
+
+    // Validate before any request (SSRF guard): reject non-http(s) schemes and
+    // unparseable URLs without performing a scrape.
+    let target: string;
+    try {
+      target = validateTarget(rawTarget);
+    } catch (err) {
+      log.error(
+        `Rejected target ${sanitize(rawTarget)}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      res.statusCode = 400;
+      res.end("400 invalid target");
+      return;
+    }
 
     // Fresh registry per scrape so old label series are not retained.
     const registry = new Registry();

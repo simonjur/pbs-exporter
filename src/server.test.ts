@@ -131,6 +131,23 @@ describe("handleRequest — /metrics", () => {
     expect(status?.error).toMatch(/Status code 503/);
   });
 
+  it("rejects a disallowed ?target= scheme with HTTP 400 and no scrape", async () => {
+    const mock = installFetch(healthyRoutes());
+    const res = mockRes();
+
+    await handleRequest(
+      mockReq("/metrics?target=file:///etc/passwd"),
+      res,
+      ctx(baseConfig({ endpoint: "" })),
+    );
+
+    expect(res.statusCode).toBe(400);
+    expect(String(res.body)).toContain("invalid target");
+    // No PBS request was made.
+    expect(mock.calls).toHaveLength(0);
+    expect(getStatuses()).toHaveLength(0);
+  });
+
   it("honours a custom metrics path", async () => {
     installFetch(healthyRoutes());
     const res = mockRes();

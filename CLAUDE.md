@@ -88,8 +88,17 @@ See `loadConfig` in [src/config.ts](src/config.ts) and the `REQ-CFG-*` requireme
 
 Any user-controlled value (e.g. the resolved `target` endpoint) must be stripped of
 CR/LF before being logged, to prevent log-injection. Use the `sanitize()` helper in
-[src/main.ts](src/main.ts) (it `replaceAll`s `\n` and `\r`) for anything originating
+[src/log.ts](src/log.ts) (it `replaceAll`s `\n` and `\r`) for anything originating
 from request input or external responses.
+
+## Security — SSRF (target validation)
+
+The endpoint/`?target=` URL is attacker-influenceable, so it is validated with
+`validateTarget()` in [src/config.ts](src/config.ts) before any HTTP request: it must
+be a parseable absolute URL with an `http:`/`https:` scheme (rejects `file:`, `gopher:`,
+etc.). A configured `endpoint` is validated at load (fatal on failure); a `?target=` is
+validated per-request in [src/server.ts](src/server.ts) (HTTP 400 on failure, no scrape).
+See `REQ-SEC-4` in [SPEC.md](SPEC.md).
 
 ## Legacy Go code (pending removal)
 

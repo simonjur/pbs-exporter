@@ -31,6 +31,29 @@ export function readSecretFile(filename: string): string {
   return content.split(/\r?\n/, 1)[0] ?? "";
 }
 
+const ALLOWED_TARGET_SCHEMES = ["http:", "https:"];
+
+/**
+ * Validate a target/endpoint URL before it is used for an HTTP request.
+ *
+ * It must be a parseable absolute URL using an `http:`/`https:` scheme; any
+ * other scheme (`file:`, `gopher:`, …) or an unparseable value throws. This
+ * mitigates SSRF from the operator-supplied endpoint and the `?target=` query
+ * parameter. Returns the original URL string unchanged on success.
+ */
+export function validateTarget(rawUrl: string): string {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error(`invalid target URL: ${rawUrl}`);
+  }
+  if (!ALLOWED_TARGET_SCHEMES.includes(url.protocol)) {
+    throw new Error(`disallowed target URL scheme: ${url.protocol}`);
+  }
+  return rawUrl;
+}
+
 /** Parse a Go-style boolean string ("1"/"t"/"true" / "0"/"f"/"false"). */
 export function parseBool(input: string): boolean {
   switch (input.toLowerCase()) {
@@ -138,6 +161,10 @@ export function loadConfig(
   if (env.PBS_INSECURE) config.insecure = env.PBS_INSECURE;
   if (env.PBS_METRICS_PATH) config.metricsPath = env.PBS_METRICS_PATH;
   if (env.PBS_LISTEN_ADDRESS) config.listenAddress = env.PBS_LISTEN_ADDRESS;
+
+  // Validate a configured endpoint up front (SSRF guard); empty = dynamic
+  // `?target=` mode, validated per-request in the HTTP layer.
+  if (config.endpoint !== "") config.endpoint = validateTarget(config.endpoint);
 
   return config;
 }

@@ -105,11 +105,14 @@ from request input or external responses.
 ## Security — SSRF (target validation)
 
 The endpoint/`?target=` URL is attacker-influenceable, so it is validated with
-`validateTarget()` in [src/config.ts](src/config.ts) before any HTTP request: it must
-be a parseable absolute URL with an `http:`/`https:` scheme (rejects `file:`, `gopher:`,
-etc.). A configured `endpoint` is validated at load (fatal on failure); a `?target=` is
-validated per-request in [src/server.ts](src/server.ts) (HTTP 400 on failure, no scrape).
-See `REQ-SEC-4` in [SPEC.md](SPEC.md).
+`validateUrl()` in [src/config.ts](src/config.ts) before any HTTP request: it must be a
+parseable absolute URL with an `http:`/`https:` scheme (rejects `file:`, `gopher:`,
+etc.), and it returns a parsed `URL` object. A configured `endpoint` is validated at load
+(fatal on failure); a `?target=` is validated per-request in [src/server.ts](src/server.ts)
+(HTTP 400 on failure, no scrape). As a defence-in-depth measure at the network boundary,
+[src/exporter.ts](src/exporter.ts) re-validates the fully-resolved request URL with
+`validateUrl()` immediately before each `fetch` and passes it the resulting `URL` object
+(not a raw string). See `REQ-SEC-4` in [SPEC.md](SPEC.md).
 
 ## Legacy Go code (pending removal)
 

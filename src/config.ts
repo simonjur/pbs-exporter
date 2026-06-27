@@ -34,14 +34,16 @@ export function readSecretFile(filename: string): string {
 const ALLOWED_TARGET_SCHEMES = new Set(["http:", "https:"]);
 
 /**
- * Validate a target/endpoint URL before it is used for an HTTP request.
+ * Validate a target/endpoint URL before it is used for an HTTP request, and
+ * return it as a parsed `URL` object.
  *
  * It must be a parseable absolute URL using an `http:`/`https:` scheme; any
  * other scheme (`file:`, `gopher:`, …) or an unparseable value throws. This
  * mitigates SSRF from the operator-supplied endpoint and the `?target=` query
- * parameter. Returns the original URL string unchanged on success.
+ * parameter. Callers should use the returned `URL` (or pass it straight to
+ * `fetch`) so the value used for the network request is the validated one.
  */
-export function validateTarget(rawUrl: string): string {
+export function validateUrl(rawUrl: string): URL {
   let url: URL;
   try {
     url = new URL(rawUrl);
@@ -51,7 +53,7 @@ export function validateTarget(rawUrl: string): string {
   if (!ALLOWED_TARGET_SCHEMES.has(url.protocol)) {
     throw new Error(`disallowed target URL scheme: ${url.protocol}`);
   }
-  return rawUrl;
+  return url;
 }
 
 /** Parse a Go-style boolean string ("1"/"t"/"true" / "0"/"f"/"false"). */
@@ -162,9 +164,11 @@ export function loadConfig(
   if (env.PBS_METRICS_PATH) config.metricsPath = env.PBS_METRICS_PATH;
   if (env.PBS_LISTEN_ADDRESS) config.listenAddress = env.PBS_LISTEN_ADDRESS;
 
-  // Validate a configured endpoint up front (SSRF guard); empty = dynamic
-  // `?target=` mode, validated per-request in the HTTP layer.
-  if (config.endpoint !== "") config.endpoint = validateTarget(config.endpoint);
+  // Validate a configured endpoint up front (SSRF guard), whether it came from
+  // the `--pbs.endpoint` flag or the `PBS_ENDPOINT` env var; empty = dynamic
+  // `?target=` mode, validated per-request in the HTTP layer. The endpoint
+  // string is kept as-is (the exporter re-validates the full URL before fetch).
+  if (config.endpoint !== "") validateUrl(config.endpoint);
 
   return config;
 }

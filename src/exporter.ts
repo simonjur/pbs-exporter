@@ -8,6 +8,7 @@
  */
 
 import type { Dispatcher } from "undici";
+import { validateUrl } from "./config.ts";
 import { log, sanitize } from "./log.ts";
 import type { Metrics } from "./metrics.ts";
 
@@ -96,8 +97,10 @@ export class Exporter {
   private async request<T>(
     path: string,
   ): Promise<{ status: number; body: string; json: () => T }> {
-    const url = this.endpoint + path;
-    log.debug(`Request URL: ${sanitize(url)}`);
+    // Re-validate the fully-resolved URL at the network boundary (SSRF guard):
+    // `fetch` receives the parsed, scheme-checked `URL` object, not a raw string.
+    const url = validateUrl(this.endpoint + path);
+    log.debug(`Request URL: ${sanitize(url.toString())}`);
 
     const resp = await fetch(url, {
       headers: { Authorization: this.authorizationHeader },

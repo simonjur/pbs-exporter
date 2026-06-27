@@ -13,7 +13,7 @@ import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
 import type { Dispatcher } from "undici";
 import { Registry } from "prom-client";
-import { type Config, validateTarget } from "./config.ts";
+import { type Config, validateUrl } from "./config.ts";
 import { log, sanitize } from "./log.ts";
 import { buildMetrics } from "./metrics.ts";
 import { Exporter } from "./exporter.ts";
@@ -89,10 +89,10 @@ export async function handleRequest(
     log.debug(`Using connection endpoint ${sanitize(rawTarget)}`);
 
     // Validate before any request (SSRF guard): reject non-http(s) schemes and
-    // unparseable URLs without performing a scrape.
-    let target: string;
+    // unparseable URLs with a 400, without performing a scrape. The exporter
+    // re-validates the full URL at the fetch boundary.
     try {
-      target = validateTarget(rawTarget);
+      validateUrl(rawTarget);
     } catch (err) {
       log.error(
         `Rejected target ${sanitize(rawTarget)}: ${err instanceof Error ? err.message : String(err)}`,
@@ -101,6 +101,7 @@ export async function handleRequest(
       res.end("400 invalid target");
       return;
     }
+    const target = rawTarget;
 
     // Fresh registry per scrape so old label series are not retained.
     const registry = new Registry();

@@ -7,7 +7,7 @@ import {
   loadConfig,
   parseBool,
   readSecretFile,
-  validateTarget,
+  validateUrl,
 } from "../config.ts";
 
 /** Build a process-style argv ("node", "script", ...flags) for loadConfig. */
@@ -186,13 +186,15 @@ describe("loadConfig", () => {
   });
 });
 
-describe("validateTarget", () => {
+describe("validateUrl", () => {
   it.each([
     "http://localhost:8007",
     "https://192.168.1.164:8007",
     "https://pbs.example.com",
-  ])("accepts http(s) URL %j", (url) => {
-    expect(validateTarget(url)).toBe(url);
+  ])("accepts http(s) URL %j and returns a URL", (url) => {
+    const result = validateUrl(url);
+    expect(result).toBeInstanceOf(URL);
+    expect(result.href).toBe(new URL(url).href);
   });
 
   it.each([
@@ -201,13 +203,13 @@ describe("validateTarget", () => {
     "ftp://h/f",
     "data:text/plain,x",
   ])("rejects disallowed scheme %j", (url) => {
-    expect(() => validateTarget(url)).toThrow(/disallowed target URL scheme/);
+    expect(() => validateUrl(url)).toThrow(/disallowed target URL scheme/);
   });
 
   it.each(["", "not-a-url", "//no-scheme"])(
     "rejects unparseable URL %j",
     (url) => {
-      expect(() => validateTarget(url)).toThrow(/invalid target URL/);
+      expect(() => validateUrl(url)).toThrow(/invalid target URL/);
     },
   );
 });

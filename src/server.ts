@@ -81,9 +81,9 @@ export async function handleRequest(
     // Determine the target endpoint.
     let rawTarget: string;
     if (config.endpoint === "") {
-        rawTarget = url.searchParams.get("target") ?? "http://localhost:8007";
+      rawTarget = url.searchParams.get("target") ?? "http://localhost:8007";
     } else {
-        rawTarget = config.endpoint;
+      rawTarget = config.endpoint;
     }
 
     log.debug(`Using connection endpoint ${sanitize(rawTarget)}`);

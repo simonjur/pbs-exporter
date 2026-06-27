@@ -52,7 +52,7 @@ function main(): void {
   }
 
   setLogLevel(config.loglevel);
-  setLogFormat(config.logformat);
+  setLogFormat(config.logFormat);
 
   log.info(
     `Starting PBS Exporter ${Version}, commit ${Commit}, built at ${BuildTime}`,

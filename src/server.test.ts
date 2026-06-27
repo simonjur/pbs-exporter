@@ -55,7 +55,7 @@ function baseConfig(overrides: Partial<Config> = {}): Config {
     metricsPath: "/metrics",
     listenAddress: ":10019",
     loglevel: "info",
-    logformat: "text",
+    logFormat: "text",
     showVersion: false,
     ...overrides,
   };

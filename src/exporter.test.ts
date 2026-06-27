@@ -298,8 +298,9 @@ describe("findLastSnapshotWithBackupID", () => {
       { "backup-id": "b", "backup-time": 500 },
     ];
     expect(findLastSnapshotWithBackupID(snapshots, "a")).toEqual({
-      timestamp: 300,
-      verify: "failed",
+      "backup-id": "a",
+      "backup-time": 300,
+      verification: { state: "failed" },
     });
   });
 

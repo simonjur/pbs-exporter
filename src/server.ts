@@ -80,10 +80,10 @@ export async function handleRequest(
   if (url.pathname === config.metricsPath) {
     // Determine the target endpoint.
     let rawTarget: string;
-    if (config.endpoint !== "") {
-      rawTarget = config.endpoint;
+    if (config.endpoint === "") {
+        rawTarget = url.searchParams.get("target") ?? "http://localhost:8007";
     } else {
-      rawTarget = url.searchParams.get("target") ?? "http://localhost:8007";
+        rawTarget = config.endpoint;
     }
 
     log.debug(`Using connection endpoint ${sanitize(rawTarget)}`);

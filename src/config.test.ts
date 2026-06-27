@@ -79,7 +79,7 @@ describe("loadConfig", () => {
       metricsPath: "/metrics",
       listenAddress: ":10019",
       loglevel: "info",
-      logformat: "text",
+      logFormat: "text",
       showVersion: false,
     });
   });
@@ -150,16 +150,16 @@ describe("loadConfig", () => {
   });
 
   it("reads the log format from flag and env", () => {
-    expect(loadConfig(argv("--pbs.logformat=json"), noEnv).logformat).toBe(
+    expect(loadConfig(argv("--pbs.logformat=json"), noEnv).logFormat).toBe(
       "json",
     );
-    expect(loadConfig(argv(), { PBS_LOGFORMAT: "json" }).logformat).toBe(
+    expect(loadConfig(argv(), { PBS_LOGFORMAT: "json" }).logFormat).toBe(
       "json",
     );
     // Env overrides flag.
     expect(
       loadConfig(argv("--pbs.logformat=json"), { PBS_LOGFORMAT: "text" })
-        .logformat,
+        .logFormat,
     ).toBe("text");
   });
 

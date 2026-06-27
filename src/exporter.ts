@@ -82,7 +82,7 @@ export class Exporter {
   private versionInfo: {
     version: string;
     release: string;
-    repoid: string;
+    repoId: string;
   } | null = null;
 
   constructor(opts: ExporterOptions) {
@@ -164,7 +164,7 @@ export class Exporter {
     this.versionInfo = {
       version: d.version,
       release: d.release,
-      repoid: d.repoid,
+      repoId: d.repoid,
     };
     m.version.set(
       { version: d.version, repoid: d.repoid, release: d.release },
@@ -314,12 +314,16 @@ export class Exporter {
       if (last === null) {
         throw new Error(`No snapshot found with backupID ${vmID}`);
       }
-      m.snapshotVmLastTimestamp.set(labels, last.timestamp);
+      const lastTimestamp = last["backup-time"];
+      m.snapshotVmLastTimestamp.set(labels, lastTimestamp);
       m.snapshotVmLastAge.set(
         labels,
-        Math.floor(Date.now() / 1000) - last.timestamp,
+        Math.floor(Date.now() / 1000) - lastTimestamp,
       );
-      m.snapshotVmLastVerify.set(labels, last.verify === "ok" ? 1 : 0);
+      m.snapshotVmLastVerify.set(
+        labels,
+        last.verification?.state === "ok" ? 1 : 0,
+      );
     }
   }
 }
@@ -327,19 +331,15 @@ export class Exporter {
 export function findLastSnapshotWithBackupID(
   snapshots: SnapshotEntry[],
   backupID: string,
-): { timestamp: number; verify: string } | null {
-  let lastTimestamp = 0;
-  let lastVerify = "";
+): SnapshotEntry | null {
+  let last: SnapshotEntry | null = null;
   for (const snapshot of snapshots) {
     if (
       snapshot["backup-id"] === backupID &&
-      snapshot["backup-time"] > lastTimestamp
+      (last === null || snapshot["backup-time"] > last["backup-time"])
     ) {
-      lastTimestamp = snapshot["backup-time"];
-      lastVerify = snapshot.verification?.state ?? "";
+      last = snapshot;
     }
   }
-  return lastTimestamp !== 0
-    ? { timestamp: lastTimestamp, verify: lastVerify }
-    : null;
+  return last;
 }

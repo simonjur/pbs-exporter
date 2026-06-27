@@ -19,7 +19,7 @@ export type Config = {
   metricsPath: string;
   listenAddress: string;
   loglevel: string;
-  logformat: LogFormat;
+  logFormat: LogFormat;
   showVersion: boolean;
 };
 
@@ -31,7 +31,7 @@ export function readSecretFile(filename: string): string {
   return content.split(/\r?\n/, 1)[0] ?? "";
 }
 
-const ALLOWED_TARGET_SCHEMES = ["http:", "https:"];
+const ALLOWED_TARGET_SCHEMES = new Set(["http:", "https:"]);
 
 /**
  * Validate a target/endpoint URL before it is used for an HTTP request.
@@ -48,7 +48,7 @@ export function validateTarget(rawUrl: string): string {
   } catch {
     throw new Error(`invalid target URL: ${rawUrl}`);
   }
-  if (!ALLOWED_TARGET_SCHEMES.includes(url.protocol)) {
+  if (!ALLOWED_TARGET_SCHEMES.has(url.protocol)) {
     throw new Error(`disallowed target URL scheme: ${url.protocol}`);
   }
   return rawUrl;
@@ -126,7 +126,7 @@ export function loadConfig(
   if (env.PBS_LOGFORMAT) logformatRaw = env.PBS_LOGFORMAT;
   if (logformatRaw !== "text" && logformatRaw !== "json")
     throw new Error(`invalid log format: ${logformatRaw}`);
-  const logformat: LogFormat = logformatRaw;
+  const logFormat: LogFormat = logformatRaw;
 
   const config: Config = {
     endpoint: opts["pbs.endpoint"],
@@ -138,7 +138,7 @@ export function loadConfig(
     metricsPath: opts["pbs.metricsPath"],
     listenAddress: opts["pbs.listenAddress"],
     loglevel: opts["pbs.loglevel"],
-    logformat,
+    logFormat: logFormat,
     showVersion: opts["version"] === true,
   };
 

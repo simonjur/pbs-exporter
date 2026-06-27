@@ -62,6 +62,10 @@ npm run tests:unit:coverage  # run tests + write coverage/ reports (html, cobert
 npm run build                # emit JS to dist/ (tsc)
 ```
 
+Always run unit tests via these npm scripts (`npm run tests:unit`, or
+`npm run tests:unit:coverage` for coverage) — never invoke `npx vitest`/`vitest`
+directly, as that bypasses the configured flags and coverage reporters.
+
 Coverage reports land in `coverage/`:
 - `index.html` — human-browsable report
 - `cobertura-coverage.xml` — generic XML for GitHub coverage actions

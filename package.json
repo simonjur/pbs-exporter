@@ -17,6 +17,7 @@
     "format": "prettier --write \"**/*.ts\"",
     "tests:unit": "vitest run",
     "tests:unit:coverage": "vitest run --coverage",
+    "build:fe": "node scripts/build-fe.mjs",
     "build": "tsc"
   },
   "dependencies": {

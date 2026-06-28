@@ -8,7 +8,7 @@ under `ghcr.io/simonjur/pbs-exporter-node`.
 
 | ID | Requirement | Verify |
 |----|-------------|--------|
-| REQ-IMG-1 | A [`Dockerfile`](../Dockerfile) builds a Node.js 24 image that runs the exporter straight from TypeScript (no compile step); the runtime stage installs production dependencies only (`npm ci --omit=dev`) and copies `src/`. | `docker build -t pbs-exporter-node .` succeeds. **[offline-ok]** |
+| REQ-IMG-1 | A [`Dockerfile`](../Dockerfile) builds a Node.js 24 image that runs the exporter straight from TypeScript (no compile step); the runtime stage installs production dependencies only (`npm ci --omit=dev`), copies `src/` and `scripts/`, and runs `npm run build:fe` to assemble the status-UI frontend into `public/` (see `REQ-UI-6`). | `docker build -t pbs-exporter-node .` succeeds and the image contains `public/index.html`. **[offline-ok]** |
 | REQ-IMG-2 | The image runs as the unprivileged `nobody` user (UID `65534`) and exposes port `10019`. | `Dockerfile` declares `USER 65534` and `EXPOSE 10019`; `docker run --rm pbs-exporter-node --version` prints the version line. **[offline-ok]** |
 | REQ-IMG-3 | Build metadata (`PBS_BUILD_VERSION`, `PBS_BUILD_COMMIT`, `PBS_BUILD_TIME`) is injectable at build time via `--build-arg` and surfaced as env at runtime (consumed by `--version`). | `docker build --build-arg PBS_BUILD_VERSION=vX.Y.Z .` then `docker run` with `--version` reflects `vX.Y.Z`. **[offline-ok]** |
 | REQ-IMG-4 | Published images are multi-arch, built and pushed as a single manifest list for `linux/amd64` and `linux/arm64`. | The release workflow's build step sets `platforms: linux/amd64,linux/arm64`; `docker buildx imagetools inspect ghcr.io/simonjur/pbs-exporter-node:alpha` lists both platforms. **[offline-ok]** |

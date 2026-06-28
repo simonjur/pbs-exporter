@@ -9,8 +9,8 @@
 
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { createRequire } from "node:module";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import type { Dispatcher } from "undici";
 import { Registry } from "prom-client";
 import { type Config, validateUrl } from "./config.ts";
@@ -22,34 +22,51 @@ import { Version, Commit, BuildTime } from "./buildinfo.ts";
 
 // ---------------------------------------------------------------------------
 // Static assets for the status UI (served on `/`).
-// Vue and Vuetify browser builds are vendored from node_modules at runtime —
-// no CDN, so the page works in air-gapped environments. Bodies are cached in
-// memory after first read.
+// The frontend is pre-built into the `public/` directory by `npm run build:fe`
+// (Vue/Vuetify browser builds + the app shell — no CDN, works air-gapped). The
+// server serves it as-is and requires it to exist (see `assertPublicDir`).
+// Bodies are cached in memory after first read.
 // ---------------------------------------------------------------------------
 
-const requireFromHere = createRequire(import.meta.url);
-const webDir = join(import.meta.dirname, "web");
-const vueDir = dirname(requireFromHere.resolve("vue/package.json"));
-const vuetifyDir = dirname(requireFromHere.resolve("vuetify/package.json"));
+// `public/` lives at the repo root; this module is at `src/server.ts`.
+const publicDir = join(import.meta.dirname, "..", "public");
+const assetsDir = join(publicDir, "assets");
 
 const JS_TYPE = "text/javascript; charset=utf-8";
 const staticAssets: Record<string, { file: string; type: string }> = {
-  "/": { file: join(webDir, "index.html"), type: "text/html; charset=utf-8" },
-  "/assets/app.js": { file: join(webDir, "app.js"), type: JS_TYPE },
+  "/": {
+    file: join(publicDir, "index.html"),
+    type: "text/html; charset=utf-8",
+  },
+  "/assets/app.js": { file: join(assetsDir, "app.js"), type: JS_TYPE },
   "/assets/vue.global.prod.js": {
-    file: join(vueDir, "dist", "vue.global.prod.js"),
+    file: join(assetsDir, "vue.global.prod.js"),
     type: JS_TYPE,
   },
   "/assets/vuetify.min.js": {
-    file: join(vuetifyDir, "dist", "vuetify.min.js"),
+    file: join(assetsDir, "vuetify.min.js"),
     type: JS_TYPE,
   },
   "/assets/vuetify.min.css": {
-    file: join(vuetifyDir, "dist", "vuetify.min.css"),
+    file: join(assetsDir, "vuetify.min.css"),
     type: "text/css; charset=utf-8",
   },
 };
 const assetCache = new Map<string, Buffer>();
+
+/**
+ * Verify the pre-built status-UI assets exist. The server assumes `public/` is
+ * present (built by `npm run build:fe`, and by the Docker image at build time);
+ * if it is missing we fail fast at startup with an actionable message rather
+ * than serving 500s per request.
+ */
+export function assertPublicDir(): void {
+  if (!existsSync(join(publicDir, "index.html"))) {
+    throw new Error(
+      `Status-UI assets not found in ${publicDir}. Run "npm run build:fe" to build the frontend before starting the server.`,
+    );
+  }
+}
 
 export type RequestContext = {
   config: Config;

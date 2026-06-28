@@ -21,8 +21,10 @@ TypeScript via Node's native type stripping — there is no required build step 
   [`commander`](https://github.com/tj/commander.js) (flag parsing),
   [`parse-duration`](https://github.com/jkroso/parse-duration) (timeout duration parsing),
   [`winston`](https://github.com/winstonjs/winston) (logging),
-  [`vue`](https://vuejs.org) + [`vuetify`](https://vuetifyjs.com) (browser builds vendored
-  from `node_modules` to serve the status UI on `/` — not bundled, no build step).
+  [`vue`](https://vuejs.org) + [`vuetify`](https://vuetifyjs.com) (browser builds for the
+  status UI on `/`). The frontend is assembled into `public/` by `npm run build:fe`
+  (copies the app shell + the Vue/Vuetify browser builds; no bundler yet); the server
+  serves `public/` as-is and requires it to exist.
 - Dev deps: `typescript`, `@types/node`, `vitest`, `@vitest/coverage-v8`,
   `eslint` (v10, flat config), `@eslint/js`, `typescript-eslint`, `prettier`.
 
@@ -52,7 +54,10 @@ Tests live under [`src/__tests__/`](src/__tests__) (mirroring the `src/` layout)
 - [src/__tests__/config.test.ts](src/__tests__/config.test.ts) — vitest unit tests for the config module.
 - [src/status.ts](src/status.ts) — in-memory per-target scrape-status store powering the UI; unit-tested.
 - [src/__tests__/status.test.ts](src/__tests__/status.test.ts) — vitest unit tests for the status store.
-- [src/web/](src/web) — status UI: `index.html` shell + `app.js` (Vue 3 + Vuetify 3, no build step).
+- [src/web/](src/web) — status UI sources: `index.html` shell + `app.js` (Vue 3 + Vuetify 3).
+- [scripts/build-fe.mjs](scripts/build-fe.mjs) — `npm run build:fe`: assembles the status UI
+  (app shell + Vue/Vuetify browser builds) into `public/`. Server serves `public/` and fails
+  fast at startup if it is missing. `public/` is git-ignored; run `build:fe` locally before `npm start`.
 
 ## Commands
 
@@ -66,6 +71,7 @@ npm run lint:prettier        # check formatting of all .ts files — must exit 0
 npm run format               # auto-fix formatting with Prettier (--write)
 npm run tests:unit           # run vitest unit tests
 npm run tests:unit:coverage  # run tests + write coverage/ reports (html, cobertura xml, lcov)
+npm run build:fe             # assemble the status-UI frontend into public/ (required before `npm start`)
 npm run build                # emit JS to dist/ (tsc)
 ```
 

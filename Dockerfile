@@ -24,6 +24,11 @@ ENV PBS_BUILD_VERSION=${PBS_BUILD_VERSION} \
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json tsconfig.json ./
 COPY src ./src
+COPY scripts ./scripts
+
+# Build the status-UI frontend into ./public (Vue/Vuetify browser builds + app
+# shell). The server requires this directory to exist at runtime.
+RUN npm run build:fe
 
 # Run as the unprivileged "nobody" user (matches docker-compose `user: 65534`).
 USER 65534

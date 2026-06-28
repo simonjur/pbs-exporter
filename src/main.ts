@@ -25,7 +25,11 @@ import {
   setLogFormat,
   getLogLevel,
 } from "./log.ts";
-import { handleRequest, parseListenAddress } from "./server.ts";
+import {
+  assertPublicDir,
+  handleRequest,
+  parseListenAddress,
+} from "./server.ts";
 import { seedTarget } from "./status.ts";
 import { Version, Commit, BuildTime } from "./buildinfo.ts";
 
@@ -43,6 +47,14 @@ export function main(config: Config): void {
 
   setLogLevel(config.loglevel);
   setLogFormat(config.logFormat);
+
+  // Fail fast if the pre-built status-UI assets are missing.
+  try {
+    assertPublicDir();
+  } catch (err) {
+    log.error(err instanceof Error ? err.message : String(err));
+    process.exit(1);
+  }
 
   log.info(
     `Starting PBS Exporter ${Version}, commit ${Commit}, built at ${BuildTime}`,

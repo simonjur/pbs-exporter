@@ -4,6 +4,8 @@
 node_modules
 dist
 coverage
+# Built in-image by `npm run build:fe`; don't ship a stale local copy.
+public
 *.env
 .env
 # Legacy Go implementation (not used by the Node image)

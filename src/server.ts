@@ -63,7 +63,7 @@ const assetCache = new Map<string, Buffer>();
 export function assertPublicDir(): void {
   if (!existsSync(join(publicDir, "index.html"))) {
     throw new Error(
-      `Status-UI assets not found in ${publicDir}. Run "npm run build:fe" to build the frontend before starting the server.`,
+      `No public dir found at ${publicDir} — perhaps you forgot to run "npm run build:fe"?`,
     );
   }
 }

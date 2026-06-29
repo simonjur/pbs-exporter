@@ -35,25 +35,25 @@ function installFetch(routes: Routes) {
   return mock;
 }
 
-type MockRes = ServerResponse & {
+type MockResponse = ServerResponse & {
   statusCode: number;
   headers: Record<string, string>;
   body: unknown;
 };
 
-function mockRes(): MockRes {
-  const res = {
+function mockResponse(): MockResponse {
+  const response = {
     statusCode: 200,
     headers: {} as Record<string, string>,
     body: undefined as unknown,
     setHeader(key: string, value: string) {
-      res.headers[key] = value;
+      response.headers[key] = value;
     },
     end(chunk?: unknown) {
-      res.body = chunk;
+      response.body = chunk;
     },
   };
-  return res as unknown as MockRes;
+  return response as unknown as MockResponse;
 }
 
 function mockRequest(url: string): IncomingMessage {
@@ -95,12 +95,16 @@ afterEach(() => {
 describe("handleRequest — /metrics", () => {
   it("scrapes the fixed endpoint and exposes PBS metrics", async () => {
     installFetch(healthyRoutes());
-    const res = mockRes();
+    const response = mockResponse();
 
-    await handleRequest(mockRequest("/metrics"), res, context(baseConfig()));
+    await handleRequest(
+      mockRequest("/metrics"),
+      response,
+      context(baseConfig()),
+    );
 
-    const body = String(res.body);
-    expect(res.headers["Content-Type"]).toContain("text/plain");
+    const body = String(response.body);
+    expect(response.headers["Content-Type"]).toContain("text/plain");
     expect(body).toContain("pbs_up 1");
     expect(body).toContain('pbs_version{version="4.2"');
     expect(body).toMatch(
@@ -112,7 +116,7 @@ describe("handleRequest — /metrics", () => {
     installFetch(healthyRoutes());
     await handleRequest(
       mockRequest("/metrics"),
-      mockRes(),
+      mockResponse(),
       context(baseConfig()),
     );
 
@@ -130,7 +134,7 @@ describe("handleRequest — /metrics", () => {
     const mock = installFetch(healthyRoutes());
     await handleRequest(
       mockRequest("/metrics?target=https://other:8007"),
-      mockRes(),
+      mockResponse(),
       context(baseConfig({ endpoint: "" })),
     );
 
@@ -142,11 +146,15 @@ describe("handleRequest — /metrics", () => {
     const routes = healthyRoutes();
     routes["/api2/json/version"] = { status: 503, body: "unavailable" };
     installFetch(routes);
-    const res = mockRes();
+    const response = mockResponse();
 
-    await handleRequest(mockRequest("/metrics"), res, context(baseConfig()));
+    await handleRequest(
+      mockRequest("/metrics"),
+      response,
+      context(baseConfig()),
+    );
 
-    expect(String(res.body)).toContain("pbs_up 0");
+    expect(String(response.body)).toContain("pbs_up 0");
     const [status] = getStatuses();
     expect(status?.up).toBe(false);
     expect(status?.error).toMatch(/Status code 503/);
@@ -154,16 +162,16 @@ describe("handleRequest — /metrics", () => {
 
   it("rejects a disallowed ?target= scheme with HTTP 400 and no scrape", async () => {
     const mock = installFetch(healthyRoutes());
-    const res = mockRes();
+    const response = mockResponse();
 
     await handleRequest(
       mockRequest("/metrics?target=file:///etc/passwd"),
-      res,
+      response,
       context(baseConfig({ endpoint: "" })),
     );
 
-    expect(res.statusCode).toBe(400);
-    expect(String(res.body)).toContain("invalid target");
+    expect(response.statusCode).toBe(400);
+    expect(String(response.body)).toContain("invalid target");
     // No PBS request was made.
     expect(mock.calls).toHaveLength(0);
     expect(getStatuses()).toHaveLength(0);
@@ -171,15 +179,15 @@ describe("handleRequest — /metrics", () => {
 
   it("honours a custom metrics path", async () => {
     installFetch(healthyRoutes());
-    const res = mockRes();
+    const response = mockResponse();
 
     await handleRequest(
       mockRequest("/custom-metrics"),
-      res,
+      response,
       context(baseConfig({ metricsPath: "/custom-metrics" })),
     );
 
-    expect(String(res.body)).toContain("pbs_up 1");
+    expect(String(response.body)).toContain("pbs_up 1");
   });
 });
 
@@ -189,15 +197,19 @@ describe("handleRequest — status UI feed", () => {
     // Seed a scrape so the summary/targets are populated.
     await handleRequest(
       mockRequest("/metrics"),
-      mockRes(),
+      mockResponse(),
       context(baseConfig()),
     );
 
-    const res = mockRes();
-    await handleRequest(mockRequest("/api/status"), res, context(baseConfig()));
+    const response = mockResponse();
+    await handleRequest(
+      mockRequest("/api/status"),
+      response,
+      context(baseConfig()),
+    );
 
-    expect(res.headers["Content-Type"]).toContain("application/json");
-    const payload = JSON.parse(String(res.body));
+    expect(response.headers["Content-Type"]).toContain("application/json");
+    const payload = JSON.parse(String(response.body));
     expect(payload.exporter).toHaveProperty("version");
     expect(payload.summary).toMatchObject({ total: 1, up: 1, down: 0 });
     expect(payload.targets[0]).toMatchObject({ up: true, version: "4.2" });
@@ -206,28 +218,28 @@ describe("handleRequest — status UI feed", () => {
 
 describe("handleRequest — static assets and 404", () => {
   it("serves the status UI index.html on /", async () => {
-    const res = mockRes();
-    await handleRequest(mockRequest("/"), res, context(baseConfig()));
+    const response = mockResponse();
+    await handleRequest(mockRequest("/"), response, context(baseConfig()));
 
-    expect(res.headers["Content-Type"]).toContain("text/html");
-    expect(String(res.body)).toContain("<!doctype html>");
+    expect(response.headers["Content-Type"]).toContain("text/html");
+    expect(String(response.body)).toContain("<!doctype html>");
   });
 
   it("returns 404 for an unknown path", async () => {
-    const res = mockRes();
-    await handleRequest(mockRequest("/nope"), res, context(baseConfig()));
+    const response = mockResponse();
+    await handleRequest(mockRequest("/nope"), response, context(baseConfig()));
 
-    expect(res.statusCode).toBe(404);
-    expect(String(res.body)).toContain("404");
+    expect(response.statusCode).toBe(404);
+    expect(String(response.body)).toContain("404");
   });
 });
 
 describe("serveStaticAsset", () => {
   it("returns false for an unknown asset path", async () => {
-    const res = mockRes();
-    expect(await serveStaticAsset("/assets/missing.js", res, testLogger)).toBe(
-      false,
-    );
+    const response = mockResponse();
+    expect(
+      await serveStaticAsset("/assets/missing.js", response, testLogger),
+    ).toBe(false);
   });
 });
 

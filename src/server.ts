@@ -24,31 +24,34 @@ import { Version, Commit, BuildTime } from "./buildinfo.ts";
 // Static assets for the status UI (served on `/`).
 // The frontend is pre-built into the `public/` directory by `npm run build:fe`
 // (Vue/Vuetify browser builds + the app shell — no CDN, works air-gapped). The
-// server serves it as-is and requires it to exist (see `assertPublicDir`).
+// server serves it as-is and requires it to exist (see `assertPublicDirectory`).
 // Bodies are cached in memory after first read.
 // ---------------------------------------------------------------------------
 
 // `public/` lives at the repo root; this module is at `src/server.ts`.
-const publicDir = path.join(import.meta.dirname, "..", "public");
-const assetsDir = path.join(publicDir, "assets");
+const publicDirectory = path.join(import.meta.dirname, "..", "public");
+const assetsDirectory = path.join(publicDirectory, "assets");
 
 const JS_TYPE = "text/javascript; charset=utf-8";
 const staticAssets: Record<string, { file: string; type: string }> = {
   "/": {
-    file: path.join(publicDir, "index.html"),
+    file: path.join(publicDirectory, "index.html"),
     type: "text/html; charset=utf-8",
   },
-  "/assets/app.js": { file: path.join(assetsDir, "app.js"), type: JS_TYPE },
+  "/assets/app.js": {
+    file: path.join(assetsDirectory, "app.js"),
+    type: JS_TYPE,
+  },
   "/assets/vue.global.prod.js": {
-    file: path.join(assetsDir, "vue.global.prod.js"),
+    file: path.join(assetsDirectory, "vue.global.prod.js"),
     type: JS_TYPE,
   },
   "/assets/vuetify.min.js": {
-    file: path.join(assetsDir, "vuetify.min.js"),
+    file: path.join(assetsDirectory, "vuetify.min.js"),
     type: JS_TYPE,
   },
   "/assets/vuetify.min.css": {
-    file: path.join(assetsDir, "vuetify.min.css"),
+    file: path.join(assetsDirectory, "vuetify.min.css"),
     type: "text/css; charset=utf-8",
   },
 };
@@ -60,10 +63,10 @@ const assetCache = new Map<string, Buffer>();
  * if it is missing we fail fast at startup with an actionable message rather
  * than serving 500s per request.
  */
-export function assertPublicDir(): void {
-  if (!existsSync(path.join(publicDir, "index.html"))) {
+export function assertPublicDirectory(): void {
+  if (!existsSync(path.join(publicDirectory, "index.html"))) {
     throw new Error(
-      `No public dir found at ${publicDir} — perhaps you forgot to run "npm run build:fe"?`,
+      `No public dir found at ${publicDirectory} — perhaps you forgot to run "npm run build:fe"?`,
     );
   }
 }
@@ -89,7 +92,7 @@ export function parseListenAddress(addr: string): {
 
 export async function handleRequest(
   request: IncomingMessage,
-  res: ServerResponse,
+  response: ServerResponse,
   context: RequestContext,
 ): Promise<void> {
   const { config, log } = context;
@@ -113,8 +116,8 @@ export async function handleRequest(
       log.error(
         `Rejected target ${rawTarget}: ${error instanceof Error ? error.message : String(error)}`,
       );
-      res.statusCode = 400;
-      res.end("400 invalid target");
+      response.statusCode = 400;
+      response.end("400 invalid target");
       return;
     }
     const target = rawTarget;
@@ -143,15 +146,15 @@ export async function handleRequest(
 
     // Combine PBS scrape metrics with the persistent Node.js process metrics.
     const merged = Registry.merge([context.defaultRegistry, registry]);
-    res.setHeader("Content-Type", merged.contentType);
-    res.end(await merged.metrics());
+    response.setHeader("Content-Type", merged.contentType);
+    response.end(await merged.metrics());
     return;
   }
 
   // JSON feed powering the status UI.
   if (url.pathname === "/api/status") {
-    res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.end(
+    response.setHeader("Content-Type", "application/json; charset=utf-8");
+    response.end(
       JSON.stringify({
         exporter: { version: Version, commit: Commit, buildTime: BuildTime },
         summary: getSummary(),
@@ -162,18 +165,18 @@ export async function handleRequest(
   }
 
   // Status UI page and its vendored assets.
-  if (await serveStaticAsset(url.pathname, res, log)) {
+  if (await serveStaticAsset(url.pathname, response, log)) {
     return;
   }
 
-  res.statusCode = 404;
-  res.end("404 page not found");
+  response.statusCode = 404;
+  response.end("404 page not found");
 }
 
 /** Serve a known static asset (cached in memory). Returns false if no match. */
 export async function serveStaticAsset(
   pathname: string,
-  res: ServerResponse,
+  response: ServerResponse,
   log: Logger,
 ): Promise<boolean> {
   const asset = staticAssets[pathname];
@@ -187,14 +190,14 @@ export async function serveStaticAsset(
       body = await readFile(asset.file);
       assetCache.set(pathname, body);
     }
-    res.setHeader("Content-Type", asset.type);
-    res.end(body);
+    response.setHeader("Content-Type", asset.type);
+    response.end(body);
   } catch (error) {
     log.error(
       `Failed to serve asset ${pathname}: ${error instanceof Error ? error.message : String(error)}`,
     );
-    res.statusCode = 500;
-    res.end("500 internal server error");
+    response.statusCode = 500;
+    response.end("500 internal server error");
   }
   return true;
 }

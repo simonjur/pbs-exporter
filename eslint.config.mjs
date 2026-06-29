@@ -3,15 +3,12 @@ import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import unicorn from "eslint-plugin-unicorn";
 
-// eslint-plugin-unicorn: these two rules are intentionally left off (the rest of
-// the recommended set is enabled).
-// - name-replacements: would force mass renames (res→response, ctx→context, m→…)
-//   for no real benefit — pure churn against the established naming here.
+// eslint-plugin-unicorn: one rule is intentionally left off (the rest of the
+// recommended set is enabled).
 // - no-null: `null` is deliberate in the scrape/status data shapes; those are
 //   serialized to the /api/status feed, where `null` keeps fields explicit
 //   whereas `undefined` would drop them from the JSON (changing REQ-UI-2's shape).
 const disabledUnicornRules = {
-  "unicorn/name-replacements": "off",
   "unicorn/no-null": "off",
 };
 const customUnicornRules = {

@@ -27,7 +27,7 @@ export type Config = {
 export type LogFormat = "text" | "json";
 
 /**
- * Parsed CLI options as produced by commander's `program.opts()` in `run.ts`.
+ * Parsed CLI options as produced by commander's `program.options()` in `run.ts`.
  * Keys match the commander option names: the segment after the last hyphen group
  * is camel-cased (`--pbs.metrics-path` → `pbs.metricsPath`), dots are preserved.
  */
@@ -101,75 +101,75 @@ export function isInsecureBoolean(input: string): boolean {
  * Pure: commander parsing happens in `run.ts`; this only applies the env-var
  * overrides and validation on top of the supplied {@link CliOptions}.
  *
- * @param opts Parsed CLI options (from `program.opts()` in `run.ts`).
- * @param env  Environment map (defaults to `process.env`).
+ * @param options Parsed CLI options (from `program.options()` in `run.ts`).
+ * @param environment  Environment map (defaults to `process.env`).
  */
 export function loadConfig(
-  opts: CliOptions,
-  env: NodeJS.ProcessEnv = process.env,
+  options: CliOptions,
+  environment: NodeJS.ProcessEnv = process.env,
 ): Config {
   // Resolve the raw timeout string (default → flag → env), then parse to ms.
-  const timeoutRaw = env.PBS_TIMEOUT || opts["pbs.timeout"];
+  const timeoutRaw = environment.PBS_TIMEOUT || options["pbs.timeout"];
   const timeout = parse(timeoutRaw);
   if (timeout === null) {
     throw new Error(`invalid duration: ${timeoutRaw}`);
   }
 
   // Resolve and validate the log format (default → flag → env).
-  const logformatRaw = env.PBS_LOGFORMAT || opts["pbs.logformat"];
+  const logformatRaw = environment.PBS_LOGFORMAT || options["pbs.logformat"];
   if (logformatRaw !== "text" && logformatRaw !== "json") {
     throw new Error(`invalid log format: ${logformatRaw}`);
   }
   const logFormat: LogFormat = logformatRaw;
 
   const config: Config = {
-    endpoint: opts["pbs.endpoint"],
-    username: opts["pbs.username"],
-    apiToken: opts["pbs.api.token"],
-    apiTokenName: opts["pbs.api.token.name"],
+    endpoint: options["pbs.endpoint"],
+    username: options["pbs.username"],
+    apiToken: options["pbs.api.token"],
+    apiTokenName: options["pbs.api.token.name"],
     timeout,
-    insecure: opts["pbs.insecure"],
-    metricsPath: opts["pbs.metricsPath"],
-    listenAddress: opts["pbs.listenAddress"],
-    loglevel: opts["pbs.loglevel"],
+    insecure: options["pbs.insecure"],
+    metricsPath: options["pbs.metricsPath"],
+    listenAddress: options["pbs.listenAddress"],
+    loglevel: options["pbs.loglevel"],
     logFormat: logFormat,
-    showVersion: opts["version"] === true,
+    showVersion: options["version"] === true,
   };
 
   // Environment variables override defaults/flags.
-  if (env.PBS_LOGLEVEL) {
-    config.loglevel = env.PBS_LOGLEVEL;
+  if (environment.PBS_LOGLEVEL) {
+    config.loglevel = environment.PBS_LOGLEVEL;
   }
-  if (env.PBS_ENDPOINT) {
-    config.endpoint = env.PBS_ENDPOINT;
-  }
-
-  if (env.PBS_USERNAME) {
-    config.username = env.PBS_USERNAME;
-  } else if (env.PBS_USERNAME_FILE) {
-    config.username = readSecretFile(env.PBS_USERNAME_FILE);
+  if (environment.PBS_ENDPOINT) {
+    config.endpoint = environment.PBS_ENDPOINT;
   }
 
-  if (env.PBS_API_TOKEN_NAME) {
-    config.apiTokenName = env.PBS_API_TOKEN_NAME;
-  } else if (env.PBS_API_TOKEN_NAME_FILE) {
-    config.apiTokenName = readSecretFile(env.PBS_API_TOKEN_NAME_FILE);
+  if (environment.PBS_USERNAME) {
+    config.username = environment.PBS_USERNAME;
+  } else if (environment.PBS_USERNAME_FILE) {
+    config.username = readSecretFile(environment.PBS_USERNAME_FILE);
   }
 
-  if (env.PBS_API_TOKEN) {
-    config.apiToken = env.PBS_API_TOKEN;
-  } else if (env.PBS_API_TOKEN_FILE) {
-    config.apiToken = readSecretFile(env.PBS_API_TOKEN_FILE);
+  if (environment.PBS_API_TOKEN_NAME) {
+    config.apiTokenName = environment.PBS_API_TOKEN_NAME;
+  } else if (environment.PBS_API_TOKEN_NAME_FILE) {
+    config.apiTokenName = readSecretFile(environment.PBS_API_TOKEN_NAME_FILE);
   }
 
-  if (env.PBS_INSECURE) {
-    config.insecure = env.PBS_INSECURE;
+  if (environment.PBS_API_TOKEN) {
+    config.apiToken = environment.PBS_API_TOKEN;
+  } else if (environment.PBS_API_TOKEN_FILE) {
+    config.apiToken = readSecretFile(environment.PBS_API_TOKEN_FILE);
   }
-  if (env.PBS_METRICS_PATH) {
-    config.metricsPath = env.PBS_METRICS_PATH;
+
+  if (environment.PBS_INSECURE) {
+    config.insecure = environment.PBS_INSECURE;
   }
-  if (env.PBS_LISTEN_ADDRESS) {
-    config.listenAddress = env.PBS_LISTEN_ADDRESS;
+  if (environment.PBS_METRICS_PATH) {
+    config.metricsPath = environment.PBS_METRICS_PATH;
+  }
+  if (environment.PBS_LISTEN_ADDRESS) {
+    config.listenAddress = environment.PBS_LISTEN_ADDRESS;
   }
 
   // Validate a configured endpoint up front (SSRF guard), whether it came from

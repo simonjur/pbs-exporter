@@ -35,10 +35,10 @@ function options(overrides: Partial<CliOptions> = {}): CliOptions {
 // Temp files created during tests, cleaned up afterwards.
 const temporaryFiles: string[] = [];
 function secretFile(contents: string): string {
-  const dir = mkdtempSync(path.join(tmpdir(), "pbs-exporter-test-"));
-  const filePath = path.join(dir, "secret");
+  const directory = mkdtempSync(path.join(tmpdir(), "pbs-exporter-test-"));
+  const filePath = path.join(directory, "secret");
   writeFileSync(filePath, contents);
-  temporaryFiles.push(dir);
+  temporaryFiles.push(directory);
   return filePath;
 }
 

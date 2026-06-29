@@ -10,27 +10,31 @@ vi.mock("node:fs/promises", () => ({
 import { serveStaticAsset } from "../server.ts";
 import { testLogger } from "./pbs.fixtures.ts";
 
-type MockRes = ServerResponse & { statusCode: number; body: unknown };
+type MockResponse = ServerResponse & { statusCode: number; body: unknown };
 
-function mockRes(): MockRes {
-  const res = {
+function mockResponse(): MockResponse {
+  const response = {
     statusCode: 200,
     body: undefined as unknown,
     setHeader() {},
     end(chunk?: unknown) {
-      res.body = chunk;
+      response.body = chunk;
     },
   };
-  return res as unknown as MockRes;
+  return response as unknown as MockResponse;
 }
 
 describe("serveStaticAsset — read failure", () => {
   it("responds 500 when the asset file cannot be read", async () => {
-    const res = mockRes();
-    const handled = await serveStaticAsset("/assets/app.js", res, testLogger);
+    const response = mockResponse();
+    const handled = await serveStaticAsset(
+      "/assets/app.js",
+      response,
+      testLogger,
+    );
 
     expect(handled).toBe(true);
-    expect(res.statusCode).toBe(500);
-    expect(String(res.body)).toContain("500");
+    expect(response.statusCode).toBe(500);
+    expect(String(response.body)).toContain("500");
   });
 });

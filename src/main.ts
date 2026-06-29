@@ -20,7 +20,7 @@ import { Registry, collectDefaultMetrics } from "prom-client";
 import { type Config, isInsecureBoolean } from "./config.ts";
 import { createLogger } from "./log.ts";
 import {
-  assertPublicDir,
+  assertPublicDirectory,
   handleRequest,
   parseListenAddress,
 } from "./server.ts";
@@ -43,7 +43,7 @@ export function main(config: Config): void {
 
   // Fail fast if the pre-built status-UI assets are missing.
   try {
-    assertPublicDir();
+    assertPublicDirectory();
   } catch (error) {
     log.error(error instanceof Error ? error.message : String(error));
     throw error;
@@ -93,8 +93,8 @@ export function main(config: Config): void {
   log.info(`Metrics path: ${config.metricsPath}`);
 
   const server = createServer(
-    (request: IncomingMessage, res: ServerResponse) => {
-      void handleRequest(request, res, {
+    (request: IncomingMessage, response: ServerResponse) => {
+      void handleRequest(request, response, {
         config,
         defaultRegistry,
         timeoutMs,

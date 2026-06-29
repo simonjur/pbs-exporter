@@ -29,11 +29,9 @@ import {
   type Routes,
 } from "./pbs.fixtures.ts";
 
-const realFetch = globalThis.fetch;
-
 function installFetch(routes: Routes) {
   const mock = makeFetchMock(routes);
-  globalThis.fetch = mock as unknown as typeof fetch;
+  vi.stubGlobal("fetch", mock);
   return mock;
 }
 
@@ -49,10 +47,10 @@ function mockRes(): MockRes {
     headers: {} as Record<string, string>,
     body: undefined as unknown,
     setHeader(key: string, value: string) {
-      this.headers[key] = value;
+      res.headers[key] = value;
     },
     end(chunk?: unknown) {
-      this.body = chunk;
+      res.body = chunk;
     },
   };
   return res as unknown as MockRes;
@@ -90,7 +88,7 @@ function context(config: Config): RequestContext {
 }
 
 afterEach(() => {
-  globalThis.fetch = realFetch;
+  vi.unstubAllGlobals();
   resetStatuses();
 });
 

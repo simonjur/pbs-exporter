@@ -18,7 +18,7 @@ function mockRes(): MockRes {
     body: undefined as unknown,
     setHeader() {},
     end(chunk?: unknown) {
-      this.body = chunk;
+      res.body = chunk;
     },
   };
   return res as unknown as MockRes;

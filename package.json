@@ -31,6 +31,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@tsconfig/node-ts": "^23.6.4",
+    "@tsconfig/node24": "^24.0.4",
     "@types/node": "^24.0.0",
     "@vitest/coverage-v8": "^4.1.9",
     "eslint": "^10.5.0",

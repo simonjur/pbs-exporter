@@ -14,11 +14,9 @@ import {
   type Routes,
 } from "./pbs.fixtures.ts";
 
-const realFetch = globalThis.fetch;
-
 function installFetch(routes: Routes) {
   const mock = makeFetchMock(routes);
-  globalThis.fetch = mock as unknown as typeof fetch;
+  vi.stubGlobal("fetch", mock);
   return mock;
 }
 
@@ -39,7 +37,7 @@ function freshMetrics(): { registry: Registry; metrics: Metrics } {
 }
 
 afterEach(() => {
-  globalThis.fetch = realFetch;
+  vi.unstubAllGlobals();
   vi.useRealTimers();
 });
 
@@ -257,8 +255,7 @@ describe("Exporter.collect — error handling", () => {
   });
 
   it("returns up=false when a fetch rejects", async () => {
-    globalThis.fetch = (() =>
-      Promise.reject(new Error("network down"))) as unknown as typeof fetch;
+    vi.stubGlobal("fetch", () => Promise.reject(new Error("network down")));
     const { registry, metrics } = freshMetrics();
 
     const result = await newExporter().collect(metrics);

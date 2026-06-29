@@ -118,29 +118,6 @@ export class Exporter {
     return { status: resp.status, body, json: () => JSON.parse(body) as T };
   }
 
-  async collect(m: Metrics): Promise<ScrapeResult> {
-    try {
-      await this.collectFromAPI(m);
-      m.up.set(1);
-      return {
-        up: true,
-        version: this.versionInfo?.version ?? null,
-        release: this.versionInfo?.release ?? null,
-        error: null,
-      };
-    } catch (error) {
-      m.up.set(0);
-      const message = error instanceof Error ? error.message : String(error);
-      this.log.error(message);
-      return {
-        up: false,
-        version: this.versionInfo?.version ?? null,
-        release: this.versionInfo?.release ?? null,
-        error: message,
-      };
-    }
-  }
-
   private async collectFromAPI(m: Metrics): Promise<void> {
     await this.getVersion(m);
 
@@ -339,6 +316,29 @@ export class Exporter {
         labels,
         last.verification?.state === "ok" ? 1 : 0,
       );
+    }
+  }
+
+  public async collect(m: Metrics): Promise<ScrapeResult> {
+    try {
+      await this.collectFromAPI(m);
+      m.up.set(1);
+      return {
+        up: true,
+        version: this.versionInfo?.version ?? null,
+        release: this.versionInfo?.release ?? null,
+        error: null,
+      };
+    } catch (error) {
+      m.up.set(0);
+      const message = error instanceof Error ? error.message : String(error);
+      this.log.error(message);
+      return {
+        up: false,
+        version: this.versionInfo?.version ?? null,
+        release: this.versionInfo?.release ?? null,
+        error: message,
+      };
     }
   }
 }

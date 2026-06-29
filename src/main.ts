@@ -17,7 +17,7 @@ import {
 } from "node:http";
 import { Agent } from "undici";
 import { Registry, collectDefaultMetrics } from "prom-client";
-import { type Config, parseBool } from "./config.ts";
+import { type Config, isInsecureBoolean } from "./config.ts";
 import { createLogger } from "./log.ts";
 import {
   assertPublicDir,
@@ -36,7 +36,7 @@ export function main(config: Config): void {
     console.log(
       `PBS Exporter Version: ${Version}, Commit: ${Commit}, Build Time: ${BuildTime}`,
     );
-    process.exit(0);
+    return;
   }
 
   const log = createLogger(config.loglevel, config.logFormat);
@@ -46,7 +46,7 @@ export function main(config: Config): void {
     assertPublicDir();
   } catch (error) {
     log.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
+    throw error;
   }
 
   log.info(
@@ -58,12 +58,12 @@ export function main(config: Config): void {
 
   let isInsecureBool: boolean;
   try {
-    isInsecureBool = parseBool(config.insecure);
+    isInsecureBool = isInsecureBoolean(config.insecure);
   } catch (error) {
     log.error(
       `Unable to parse insecure: ${error instanceof Error ? error.message : String(error)}`,
     );
-    process.exit(1);
+    throw error;
   }
 
   const timeoutMs = config.timeout;

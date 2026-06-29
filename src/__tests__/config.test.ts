@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import path from "node:path";
 import {
   type CliOptions,
   type Config,
   loadConfig,
-  parseBool,
+  isInsecureBoolean,
   readSecretFile,
   validateUrl,
 } from "../config.ts";
@@ -35,11 +35,11 @@ function options(overrides: Partial<CliOptions> = {}): CliOptions {
 // Temp files created during tests, cleaned up afterwards.
 const temporaryFiles: string[] = [];
 function secretFile(contents: string): string {
-  const dir = mkdtempSync(join(tmpdir(), "pbs-exporter-test-"));
-  const path = join(dir, "secret");
-  writeFileSync(path, contents);
+  const dir = mkdtempSync(path.join(tmpdir(), "pbs-exporter-test-"));
+  const filePath = path.join(dir, "secret");
+  writeFileSync(filePath, contents);
   temporaryFiles.push(dir);
-  return path;
+  return filePath;
 }
 
 afterEach(() => {
@@ -58,11 +58,11 @@ describe("parseBool", () => {
     ["F", false],
     ["0", false],
   ])("parses %j -> %s", (input, expected) => {
-    expect(parseBool(input)).toBe(expected);
+    expect(isInsecureBoolean(input)).toBe(expected);
   });
 
   it.each(["", "yes", "no", "2"])("throws on invalid boolean %j", (input) => {
-    expect(() => parseBool(input)).toThrow(/invalid boolean/);
+    expect(() => isInsecureBoolean(input)).toThrow(/invalid boolean/);
   });
 });
 

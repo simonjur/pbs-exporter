@@ -1,22 +1,12 @@
 {
+  "extends": [
+    "@tsconfig/node24/tsconfig.json",
+    "@tsconfig/node-ts/tsconfig.json"
+  ],
   "compilerOptions": {
-    "target": "ES2023",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "lib": ["ES2023"],
-    "types": ["node"],
     "outDir": "dist",
-    "rootDir": "src",
-    "strict": true,
-    "noUncheckedIndexedAccess": false,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "verbatimModuleSyntax": true,
     "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true,
-    "noEmitOnError": true,
-    "declaration": false,
-    "sourceMap": true
+    "noEmitOnError": true
   },
   "include": ["src/**/*.ts"]
 }

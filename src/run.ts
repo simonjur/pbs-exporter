@@ -57,6 +57,7 @@ try {
   createLogger("info", "text").error(
     `Unable to load configuration: ${error instanceof Error ? error.message : String(error)}`,
   );
+  /* eslint-disable-next-line unicorn/no-process-exit */
   process.exit(1);
 }
 

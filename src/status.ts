@@ -65,7 +65,10 @@ export function recordScrape(update: {
 
 /** All known targets, ordered by endpoint for a stable UI. */
 export function getStatuses(): ScrapeStatus[] {
-  return [...store.values()].sort((a, b) => a.target.localeCompare(b.target));
+  return store
+    .values()
+    .toArray()
+    .toSorted((a, b) => a.target.localeCompare(b.target));
 }
 
 /** Aggregate up/down/pending counts across all known targets. */

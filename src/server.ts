@@ -10,7 +10,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { join } from "node:path";
+import path from "node:path";
 import type { Dispatcher } from "undici";
 import { Registry } from "prom-client";
 import type { Logger } from "winston";
@@ -29,26 +29,26 @@ import { Version, Commit, BuildTime } from "./buildinfo.ts";
 // ---------------------------------------------------------------------------
 
 // `public/` lives at the repo root; this module is at `src/server.ts`.
-const publicDir = join(import.meta.dirname, "..", "public");
-const assetsDir = join(publicDir, "assets");
+const publicDir = path.join(import.meta.dirname, "..", "public");
+const assetsDir = path.join(publicDir, "assets");
 
 const JS_TYPE = "text/javascript; charset=utf-8";
 const staticAssets: Record<string, { file: string; type: string }> = {
   "/": {
-    file: join(publicDir, "index.html"),
+    file: path.join(publicDir, "index.html"),
     type: "text/html; charset=utf-8",
   },
-  "/assets/app.js": { file: join(assetsDir, "app.js"), type: JS_TYPE },
+  "/assets/app.js": { file: path.join(assetsDir, "app.js"), type: JS_TYPE },
   "/assets/vue.global.prod.js": {
-    file: join(assetsDir, "vue.global.prod.js"),
+    file: path.join(assetsDir, "vue.global.prod.js"),
     type: JS_TYPE,
   },
   "/assets/vuetify.min.js": {
-    file: join(assetsDir, "vuetify.min.js"),
+    file: path.join(assetsDir, "vuetify.min.js"),
     type: JS_TYPE,
   },
   "/assets/vuetify.min.css": {
-    file: join(assetsDir, "vuetify.min.css"),
+    file: path.join(assetsDir, "vuetify.min.css"),
     type: "text/css; charset=utf-8",
   },
 };
@@ -61,7 +61,7 @@ const assetCache = new Map<string, Buffer>();
  * than serving 500s per request.
  */
 export function assertPublicDir(): void {
-  if (!existsSync(join(publicDir, "index.html"))) {
+  if (!existsSync(path.join(publicDir, "index.html"))) {
     throw new Error(
       `No public dir found at ${publicDir} — perhaps you forgot to run "npm run build:fe"?`,
     );
@@ -83,7 +83,7 @@ export function parseListenAddress(addr: string): {
 } {
   const index = addr.lastIndexOf(":");
   const host = index > 0 ? addr.slice(0, index) : undefined;
-  const port = Number.parseInt(addr.slice(index + 1), 10);
+  const port = Number(addr.slice(index + 1));
   return { host, port };
 }
 

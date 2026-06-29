@@ -77,7 +77,7 @@ export function validateUrl(rawUrl: string): URL {
 }
 
 /** Parse a Go-style boolean string ("1"/"t"/"true" / "0"/"f"/"false"). */
-export function parseBool(input: string): boolean {
+export function isInsecureBoolean(input: string): boolean {
   switch (input.toLowerCase()) {
     case "1":
     case "t":
@@ -109,20 +109,14 @@ export function loadConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): Config {
   // Resolve the raw timeout string (default → flag → env), then parse to ms.
-  let timeoutRaw: string = opts["pbs.timeout"];
-  if (env.PBS_TIMEOUT) {
-    timeoutRaw = env.PBS_TIMEOUT;
-  }
+  const timeoutRaw = env.PBS_TIMEOUT || opts["pbs.timeout"];
   const timeout = parse(timeoutRaw);
   if (timeout === null) {
     throw new Error(`invalid duration: ${timeoutRaw}`);
   }
 
   // Resolve and validate the log format (default → flag → env).
-  let logformatRaw: string = opts["pbs.logformat"];
-  if (env.PBS_LOGFORMAT) {
-    logformatRaw = env.PBS_LOGFORMAT;
-  }
+  const logformatRaw = env.PBS_LOGFORMAT || opts["pbs.logformat"];
   if (logformatRaw !== "text" && logformatRaw !== "json") {
     throw new Error(`invalid log format: ${logformatRaw}`);
   }

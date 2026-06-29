@@ -193,8 +193,8 @@ export class Exporter {
     let productName = "unknown";
     let dueTs = 0;
 
-    if (data.status != undefined) statusString = String(data.status);
-    if (data.productname != undefined) productName = String(data.productname);
+    if (typeof data.status === "string") statusString = data.status;
+    if (typeof data.productname === "string") productName = data.productname;
     if (typeof data.nextduedate === "string") {
       const parsed = Date.parse(`${data.nextduedate}T00:00:00Z`);
       if (!Number.isNaN(parsed)) dueTs = Math.floor(parsed / 1000);

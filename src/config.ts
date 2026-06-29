@@ -16,7 +16,7 @@ export type Config = {
   apiToken: string;
   apiTokenName: string;
   timeout: number;
-  insecure: string;
+  insecure: boolean;
   metricsPath: string;
   listenAddress: string;
   loglevel: string;
@@ -77,7 +77,7 @@ export function validateUrl(rawUrl: string): URL {
 }
 
 /** Parse a Go-style boolean string ("1"/"t"/"true" / "0"/"f"/"false"). */
-export function isInsecureBoolean(input: string): boolean {
+function isInsecure(input: string): boolean {
   switch (input.toLowerCase()) {
     case "1":
     case "t":
@@ -128,7 +128,8 @@ export function loadConfig(
     apiToken: options["pbs.api.token"],
     apiTokenName: options["pbs.api.token.name"],
     timeout,
-    insecure: options["pbs.insecure"],
+    // Resolve and parse the insecure flag (default → flag → env) into a boolean.
+    insecure: isInsecure(environment.PBS_INSECURE || options["pbs.insecure"]),
     metricsPath: options["pbs.metricsPath"],
     listenAddress: options["pbs.listenAddress"],
     loglevel: options["pbs.loglevel"],
@@ -162,9 +163,6 @@ export function loadConfig(
     config.apiToken = readSecretFile(environment.PBS_API_TOKEN_FILE);
   }
 
-  if (environment.PBS_INSECURE) {
-    config.insecure = environment.PBS_INSECURE;
-  }
   if (environment.PBS_METRICS_PATH) {
     config.metricsPath = environment.PBS_METRICS_PATH;
   }

@@ -67,7 +67,7 @@ function baseConfig(overrides: Partial<Config> = {}): Config {
     apiToken: "secret-token",
     apiTokenName: "pbs-exporter",
     timeout: 5000,
-    insecure: "true",
+    insecure: true,
     metricsPath: "/metrics",
     listenAddress: ":10019",
     loglevel: "info",

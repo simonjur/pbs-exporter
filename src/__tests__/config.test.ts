@@ -6,7 +6,6 @@ import {
   type CliOptions,
   type Config,
   loadConfig,
-  isInsecureBoolean,
   readSecretFile,
   validateUrl,
 } from "../config.ts";
@@ -48,24 +47,6 @@ afterEach(() => {
   }
 });
 
-describe("parseBool", () => {
-  it.each([
-    ["true", true],
-    ["TRUE", true],
-    ["t", true],
-    ["1", true],
-    ["false", false],
-    ["F", false],
-    ["0", false],
-  ])("parses %j -> %s", (input, expected) => {
-    expect(isInsecureBoolean(input)).toBe(expected);
-  });
-
-  it.each(["", "yes", "no", "2"])("throws on invalid boolean %j", (input) => {
-    expect(() => isInsecureBoolean(input)).toThrow(/invalid boolean/);
-  });
-});
-
 describe("readSecretFile", () => {
   it("returns only the first line", () => {
     expect(readSecretFile(secretFile("topsecret\nsecondline\n"))).toBe(
@@ -93,7 +74,7 @@ describe("loadConfig", () => {
       apiToken: "",
       apiTokenName: "pbs-exporter",
       timeout: 5000,
-      insecure: "false",
+      insecure: false,
       metricsPath: "/metrics",
       listenAddress: ":10019",
       loglevel: "info",
@@ -193,6 +174,20 @@ describe("loadConfig", () => {
     expect(() => loadConfig(options(), { PBS_LOGFORMAT: "xml" })).toThrow(
       /invalid log format/,
     );
+  });
+
+  it("parses insecure into a boolean (option and env)", () => {
+    expect(loadConfig(options(), noEnvironment).insecure).toBe(false);
+    expect(
+      loadConfig(options({ "pbs.insecure": "true" }), noEnvironment).insecure,
+    ).toBe(true);
+    expect(loadConfig(options(), { PBS_INSECURE: "1" }).insecure).toBe(true);
+  });
+
+  it("throws on an invalid insecure value", () => {
+    expect(() =>
+      loadConfig(options({ "pbs.insecure": "maybe" }), noEnvironment),
+    ).toThrow(/invalid boolean/);
   });
 
   it("validates a configured endpoint scheme (SSRF guard)", () => {

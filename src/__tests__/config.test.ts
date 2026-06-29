@@ -43,8 +43,9 @@ function secretFile(contents: string): string {
 }
 
 afterEach(() => {
-  while (temporaryFiles.length > 0)
+  while (temporaryFiles.length > 0) {
     rmSync(temporaryFiles.pop()!, { recursive: true, force: true });
+  }
 });
 
 describe("parseBool", () => {

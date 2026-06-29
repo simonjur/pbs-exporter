@@ -177,7 +177,9 @@ export async function serveStaticAsset(
   log: Logger,
 ): Promise<boolean> {
   const asset = staticAssets[pathname];
-  if (!asset) return false;
+  if (!asset) {
+    return false;
+  }
 
   try {
     let body = assetCache.get(pathname);

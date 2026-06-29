@@ -151,7 +151,9 @@ export function makeFetchMock(routes: Routes) {
     const path = url.replace(/^https?:\/\/[^/]+/, "");
     calls.push({ path, init });
     const route = routes[path];
-    if (!route) return new Response("not found", { status: 404 });
+    if (!route) {
+      return new Response("not found", { status: 404 });
+    }
     const body =
       typeof route.body === "string" ? route.body : JSON.stringify(route.body);
     return new Response(body, { status: route.status ?? 200 });
@@ -170,7 +172,9 @@ export async function metricValue(
 ): Promise<number | undefined> {
   const all = await registry.getMetricsAsJSON();
   const metric = all.find((m) => m.name === name);
-  if (!metric) return undefined;
+  if (!metric) {
+    return undefined;
+  }
   const entry = metric.values.find((v) =>
     Object.entries(labels).every(([k, value]) => String(v.labels[k]) === value),
   );

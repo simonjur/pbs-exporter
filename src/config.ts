@@ -110,15 +110,22 @@ export function loadConfig(
 ): Config {
   // Resolve the raw timeout string (default → flag → env), then parse to ms.
   let timeoutRaw: string = opts["pbs.timeout"];
-  if (env.PBS_TIMEOUT) timeoutRaw = env.PBS_TIMEOUT;
+  if (env.PBS_TIMEOUT) {
+    timeoutRaw = env.PBS_TIMEOUT;
+  }
   const timeout = parse(timeoutRaw);
-  if (timeout === null) throw new Error(`invalid duration: ${timeoutRaw}`);
+  if (timeout === null) {
+    throw new Error(`invalid duration: ${timeoutRaw}`);
+  }
 
   // Resolve and validate the log format (default → flag → env).
   let logformatRaw: string = opts["pbs.logformat"];
-  if (env.PBS_LOGFORMAT) logformatRaw = env.PBS_LOGFORMAT;
-  if (logformatRaw !== "text" && logformatRaw !== "json")
+  if (env.PBS_LOGFORMAT) {
+    logformatRaw = env.PBS_LOGFORMAT;
+  }
+  if (logformatRaw !== "text" && logformatRaw !== "json") {
     throw new Error(`invalid log format: ${logformatRaw}`);
+  }
   const logFormat: LogFormat = logformatRaw;
 
   const config: Config = {
@@ -136,30 +143,48 @@ export function loadConfig(
   };
 
   // Environment variables override defaults/flags.
-  if (env.PBS_LOGLEVEL) config.loglevel = env.PBS_LOGLEVEL;
-  if (env.PBS_ENDPOINT) config.endpoint = env.PBS_ENDPOINT;
+  if (env.PBS_LOGLEVEL) {
+    config.loglevel = env.PBS_LOGLEVEL;
+  }
+  if (env.PBS_ENDPOINT) {
+    config.endpoint = env.PBS_ENDPOINT;
+  }
 
-  if (env.PBS_USERNAME) config.username = env.PBS_USERNAME;
-  else if (env.PBS_USERNAME_FILE)
+  if (env.PBS_USERNAME) {
+    config.username = env.PBS_USERNAME;
+  } else if (env.PBS_USERNAME_FILE) {
     config.username = readSecretFile(env.PBS_USERNAME_FILE);
+  }
 
-  if (env.PBS_API_TOKEN_NAME) config.apiTokenName = env.PBS_API_TOKEN_NAME;
-  else if (env.PBS_API_TOKEN_NAME_FILE)
+  if (env.PBS_API_TOKEN_NAME) {
+    config.apiTokenName = env.PBS_API_TOKEN_NAME;
+  } else if (env.PBS_API_TOKEN_NAME_FILE) {
     config.apiTokenName = readSecretFile(env.PBS_API_TOKEN_NAME_FILE);
+  }
 
-  if (env.PBS_API_TOKEN) config.apiToken = env.PBS_API_TOKEN;
-  else if (env.PBS_API_TOKEN_FILE)
+  if (env.PBS_API_TOKEN) {
+    config.apiToken = env.PBS_API_TOKEN;
+  } else if (env.PBS_API_TOKEN_FILE) {
     config.apiToken = readSecretFile(env.PBS_API_TOKEN_FILE);
+  }
 
-  if (env.PBS_INSECURE) config.insecure = env.PBS_INSECURE;
-  if (env.PBS_METRICS_PATH) config.metricsPath = env.PBS_METRICS_PATH;
-  if (env.PBS_LISTEN_ADDRESS) config.listenAddress = env.PBS_LISTEN_ADDRESS;
+  if (env.PBS_INSECURE) {
+    config.insecure = env.PBS_INSECURE;
+  }
+  if (env.PBS_METRICS_PATH) {
+    config.metricsPath = env.PBS_METRICS_PATH;
+  }
+  if (env.PBS_LISTEN_ADDRESS) {
+    config.listenAddress = env.PBS_LISTEN_ADDRESS;
+  }
 
   // Validate a configured endpoint up front (SSRF guard), whether it came from
   // the `--pbs.endpoint` flag or the `PBS_ENDPOINT` env var; empty = dynamic
   // `?target=` mode, validated per-request in the HTTP layer. The endpoint
   // string is kept as-is (the exporter re-validates the full URL before fetch).
-  if (config.endpoint !== "") validateUrl(config.endpoint);
+  if (config.endpoint !== "") {
+    validateUrl(config.endpoint);
+  }
 
   return config;
 }

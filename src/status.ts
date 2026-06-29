@@ -74,9 +74,13 @@ export function getSummary(): StatusSummary {
   let down = 0;
   let pending = 0;
   for (const s of store.values()) {
-    if (s.up === true) up++;
-    else if (s.up === false) down++;
-    else pending++;
+    if (s.up === true) {
+      up++;
+    } else if (s.up === false) {
+      down++;
+    } else {
+      pending++;
+    }
   }
   return { total: store.size, up, down, pending };
 }

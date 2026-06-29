@@ -22,7 +22,7 @@ const App = {
     async function load() {
       try {
         const resp = await fetch("/api/status");
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        if (!resp.ok) {throw new Error(`HTTP ${resp.status}`);}
         const data = await resp.json();
         exporter.value = data.exporter;
         summary.value = data.summary;
@@ -37,11 +37,11 @@ const App = {
     }
 
     function relativeTime(ms) {
-      if (!ms) return "never";
+      if (!ms) {return "never";}
       const secs = Math.max(0, Math.round((now.value - ms) / 1000));
-      if (secs < 60) return `${secs}s ago`;
-      if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
-      if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
+      if (secs < 60) {return `${secs}s ago`;}
+      if (secs < 3600) {return `${Math.floor(secs / 60)}m ago`;}
+      if (secs < 86400) {return `${Math.floor(secs / 3600)}h ago`;}
       return `${Math.floor(secs / 86400)}d ago`;
     }
 
@@ -50,14 +50,14 @@ const App = {
     }
 
     function statusColor(up) {
-      if (up === true) return "success";
-      if (up === false) return "error";
+      if (up === true) {return "success";}
+      if (up === false) {return "error";}
       return "grey";
     }
 
     function statusLabel(up) {
-      if (up === true) return "UP";
-      if (up === false) return "DOWN";
+      if (up === true) {return "UP";}
+      if (up === false) {return "DOWN";}
       return "PENDING";
     }
 

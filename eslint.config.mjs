@@ -50,6 +50,9 @@ export default tseslint.config(
     ],
     rules: {
       ...disabledUnicornRules,
+      // Always require braces around control-statement bodies (no single-line
+      // `if (...) stmt;`).
+      curly: ["error", "all"],
       // Defer to the type-aware rule below for unused-vars detection.
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": noUnusedVars,
@@ -70,6 +73,7 @@ export default tseslint.config(
       },
     },
     rules: {
+      curly: ["error", "all"],
       "no-unused-vars": noUnusedVars,
     },
   },

@@ -9,6 +9,7 @@ import {
   metricValue,
   nodeStatusResponse,
   subscriptionActiveResponse,
+  testLogger,
   versionResponse,
   type Routes,
 } from "./pbs.fixtures.ts";
@@ -28,6 +29,7 @@ function newExporter() {
     apiToken: "secret-token",
     apiTokenName: "pbs-exporter",
     timeoutMs: 5000,
+    log: testLogger,
   });
 }
 

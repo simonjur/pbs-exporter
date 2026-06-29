@@ -18,13 +18,7 @@ import {
 import { Agent } from "undici";
 import { Registry, collectDefaultMetrics } from "prom-client";
 import { type Config, parseBool } from "./config.ts";
-import {
-  log,
-  sanitize,
-  setLogLevel,
-  setLogFormat,
-  getLogLevel,
-} from "./log.ts";
+import { createLogger } from "./log.ts";
 import {
   assertPublicDir,
   handleRequest,
@@ -45,8 +39,7 @@ export function main(config: Config): void {
     process.exit(0);
   }
 
-  setLogLevel(config.loglevel);
-  setLogFormat(config.logFormat);
+  const log = createLogger(config.loglevel, config.logFormat);
 
   // Fail fast if the pre-built status-UI assets are missing.
   try {
@@ -80,8 +73,8 @@ export function main(config: Config): void {
     connect: { rejectUnauthorized: !isInsecureBool, minVersion: "TLSv1.2" },
   });
 
-  if (getLogLevel() === "debug") {
-    log.debug(`Using connection endpoint: ${sanitize(config.endpoint)}`);
+  if (config.loglevel === "debug") {
+    log.debug(`Using connection endpoint: ${config.endpoint}`);
     log.debug(`Using connection username: (hidden)`);
     log.debug(`Using connection apitoken: ${config.apiToken}`);
     log.debug(`Using connection apitokenname: ${config.apiTokenName}`);
@@ -92,7 +85,7 @@ export function main(config: Config): void {
   }
 
   if (config.endpoint !== "") {
-    log.info(`Using fix connection endpoint: ${sanitize(config.endpoint)}`);
+    log.info(`Using fix connection endpoint: ${config.endpoint}`);
     // Show the fixed endpoint on the status page before its first scrape.
     seedTarget(config.endpoint);
   }
@@ -106,6 +99,7 @@ export function main(config: Config): void {
         defaultRegistry,
         timeoutMs,
         dispatcher,
+        log,
       });
     },
   );

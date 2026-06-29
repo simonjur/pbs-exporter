@@ -8,6 +8,7 @@ vi.mock("node:fs/promises", () => ({
 }));
 
 import { serveStaticAsset } from "../server.ts";
+import { testLogger } from "./pbs.fixtures.ts";
 
 type MockRes = ServerResponse & { statusCode: number; body: unknown };
 
@@ -26,7 +27,7 @@ function mockRes(): MockRes {
 describe("serveStaticAsset — read failure", () => {
   it("responds 500 when the asset file cannot be read", async () => {
     const res = mockRes();
-    const handled = await serveStaticAsset("/assets/app.js", res);
+    const handled = await serveStaticAsset("/assets/app.js", res, testLogger);
 
     expect(handled).toBe(true);
     expect(res.statusCode).toBe(500);

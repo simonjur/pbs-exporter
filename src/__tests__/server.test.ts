@@ -22,7 +22,12 @@ import {
 } from "../server.ts";
 import type { Config } from "../config.ts";
 import { getStatuses, resetStatuses } from "../status.ts";
-import { healthyRoutes, makeFetchMock, type Routes } from "./pbs.fixtures.ts";
+import {
+  healthyRoutes,
+  makeFetchMock,
+  testLogger,
+  type Routes,
+} from "./pbs.fixtures.ts";
 
 const realFetch = globalThis.fetch;
 
@@ -80,6 +85,7 @@ function context(config: Config): RequestContext {
     defaultRegistry: new Registry(),
     timeoutMs: 5000,
     dispatcher: undefined,
+    log: testLogger,
   };
 }
 
@@ -221,7 +227,9 @@ describe("handleRequest — static assets and 404", () => {
 describe("serveStaticAsset", () => {
   it("returns false for an unknown asset path", async () => {
     const res = mockRes();
-    expect(await serveStaticAsset("/assets/missing.js", res)).toBe(false);
+    expect(await serveStaticAsset("/assets/missing.js", res, testLogger)).toBe(
+      false,
+    );
   });
 });
 

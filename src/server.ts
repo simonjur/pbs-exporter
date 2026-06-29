@@ -13,8 +13,8 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Dispatcher } from "undici";
 import { Registry } from "prom-client";
+import type { Logger } from "winston";
 import { type Config, validateUrl } from "./config.ts";
-import { log, sanitize } from "./log.ts";
 import { buildMetrics } from "./metrics.ts";
 import { Exporter } from "./exporter.ts";
 import { getStatuses, getSummary, recordScrape } from "./status.ts";
@@ -74,6 +74,7 @@ export type RequestContext = {
   defaultRegistry: Registry;
   timeoutMs: number;
   dispatcher?: Dispatcher;
+  log: Logger;
 };
 
 export function parseListenAddress(addr: string): {
@@ -91,7 +92,7 @@ export async function handleRequest(
   res: ServerResponse,
   context: RequestContext,
 ): Promise<void> {
-  const { config } = context;
+  const { config, log } = context;
   const url = new URL(request.url ?? "/", "http://localhost");
 
   if (url.pathname === config.metricsPath) {
@@ -101,7 +102,7 @@ export async function handleRequest(
         ? (url.searchParams.get("target") ?? "http://localhost:8007")
         : config.endpoint;
 
-    log.debug(`Using connection endpoint ${sanitize(rawTarget)}`);
+    log.debug(`Using connection endpoint ${rawTarget}`);
 
     // Validate before any request (SSRF guard): reject non-http(s) schemes and
     // unparseable URLs with a 400, without performing a scrape. The exporter
@@ -110,7 +111,7 @@ export async function handleRequest(
       validateUrl(rawTarget);
     } catch (error) {
       log.error(
-        `Rejected target ${sanitize(rawTarget)}: ${error instanceof Error ? error.message : String(error)}`,
+        `Rejected target ${rawTarget}: ${error instanceof Error ? error.message : String(error)}`,
       );
       res.statusCode = 400;
       res.end("400 invalid target");
@@ -128,6 +129,7 @@ export async function handleRequest(
       apiTokenName: config.apiTokenName,
       timeoutMs: context.timeoutMs,
       dispatcher: context.dispatcher,
+      log,
     });
     const result = await exporter.collect(metrics);
     recordScrape({
@@ -160,7 +162,7 @@ export async function handleRequest(
   }
 
   // Status UI page and its vendored assets.
-  if (await serveStaticAsset(url.pathname, res)) {
+  if (await serveStaticAsset(url.pathname, res, log)) {
     return;
   }
 
@@ -172,6 +174,7 @@ export async function handleRequest(
 export async function serveStaticAsset(
   pathname: string,
   res: ServerResponse,
+  log: Logger,
 ): Promise<boolean> {
   const asset = staticAssets[pathname];
   if (!asset) return false;
@@ -186,7 +189,7 @@ export async function serveStaticAsset(
     res.end(body);
   } catch (error) {
     log.error(
-      `Failed to serve asset ${sanitize(pathname)}: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to serve asset ${pathname}: ${error instanceof Error ? error.message : String(error)}`,
     );
     res.statusCode = 500;
     res.end("500 internal server error");

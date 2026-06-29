@@ -12,7 +12,7 @@
 
 import { program } from "commander";
 import { type CliOptions, loadConfig, type Config } from "./config.ts";
-import { log } from "./log.ts";
+import { createLogger } from "./log.ts";
 import { main } from "./main.ts";
 
 program
@@ -53,7 +53,8 @@ let config: Config;
 try {
   config = loadConfig(options, process.env);
 } catch (error) {
-  log.error(
+  // Config isn't available yet, so use a default-format bootstrap logger.
+  createLogger("info", "text").error(
     `Unable to load configuration: ${error instanceof Error ? error.message : String(error)}`,
   );
   process.exit(1);

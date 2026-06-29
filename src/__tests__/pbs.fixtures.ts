@@ -7,6 +7,12 @@
  */
 
 import type { Registry } from "prom-client";
+import type { Logger } from "winston";
+import { createLogger } from "../log.ts";
+
+/** A silent logger for injecting into the exporter/server under test. */
+export const testLogger: Logger = createLogger("debug", "text");
+testLogger.silent = true;
 
 export const versionResponse = {
   data: {

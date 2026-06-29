@@ -47,7 +47,7 @@ Tests live under [`src/__tests__/`](src/__tests__) (mirroring the `src/` layout)
   asset serving, `parseListenAddress`; unit-tested.
 - [src/__tests__/server.test.ts](src/__tests__/server.test.ts) / [src/__tests__/server.assets.test.ts](src/__tests__/server.assets.test.ts) — vitest tests for the HTTP layer.
 - [src/metrics.ts](src/metrics.ts) — `buildMetrics` (prom-client gauge definitions), built fresh per scrape.
-- [src/log.ts](src/log.ts) — winston logger with selectable output (`text` → `LEVEL: message`, `json` → one JSON object per line), log-level/format accessors, and the `sanitize` log-injection guard.
+- [src/log.ts](src/log.ts) — exports a single `createLogger(level, format)` factory returning a winston logger with selectable output (`text` → `LEVEL: message`, `json` → one JSON object per line). CR/LF stripping (log-injection guard) is applied internally as a winston format, so callers never sanitize manually.
 - [src/buildinfo.ts](src/buildinfo.ts) — build metadata (version/commit/build time).
 - [src/__tests__/pbs.fixtures.ts](src/__tests__/pbs.fixtures.ts) — mock PBS API responses + test helpers (`makeFetchMock`, `metricValue`).
 - [src/config.ts](src/config.ts) — config loading (flags + env), pure and unit-tested.
@@ -108,10 +108,11 @@ be supplied via `*_FILE` env vars (first line of the file is read).
 
 ## Security — log injection
 
-Any user-controlled value (e.g. the resolved `target` endpoint) must be stripped of
-CR/LF before being logged, to prevent log-injection. Use the `sanitize()` helper in
-[src/log.ts](src/log.ts) (it `replaceAll`s `\n` and `\r`) for anything originating
-from request input or external responses.
+User-controlled values (e.g. the resolved `target` endpoint, external error text) must be
+stripped of CR/LF before being logged, to prevent log-injection. This is handled centrally
+in [src/log.ts](src/log.ts): every logger from `createLogger` runs a winston format step
+that `replaceAll`s `\n`/`\r` on the message, so call sites log values directly without a
+per-call sanitize helper.
 
 ## Security — SSRF (target validation)
 

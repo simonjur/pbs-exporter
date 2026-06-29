@@ -8,8 +8,8 @@
  */
 
 import type { Dispatcher } from "undici";
+import type { Logger } from "winston";
 import { validateUrl } from "./config.ts";
-import { log, sanitize } from "./log.ts";
 import type { Metrics } from "./metrics.ts";
 
 const VERSION_API = "/api2/json/version";
@@ -72,6 +72,7 @@ export type ExporterOptions = {
   apiTokenName: string;
   timeoutMs: number;
   dispatcher?: Dispatcher;
+  log: Logger;
 };
 
 export class Exporter {
@@ -79,6 +80,7 @@ export class Exporter {
   private readonly authorizationHeader: string;
   private readonly timeoutMs: number;
   private readonly dispatcher?: Dispatcher;
+  private readonly log: Logger;
   // Captured during a scrape so the status UI can report the PBS version.
   private versionInfo: {
     version: string;
@@ -91,6 +93,7 @@ export class Exporter {
     this.authorizationHeader = `PBSAPIToken=${options.username}!${options.apiTokenName}:${options.apiToken}`;
     this.timeoutMs = options.timeoutMs;
     this.dispatcher = options.dispatcher;
+    this.log = options.log;
   }
 
   /** Perform an authenticated GET and return the parsed JSON body. */
@@ -100,7 +103,7 @@ export class Exporter {
     // Re-validate the fully-resolved URL at the network boundary (SSRF guard):
     // `fetch` receives the parsed, scheme-checked `URL` object, not a raw string.
     const url = validateUrl(this.endpoint + path);
-    log.debug(`Request URL: ${sanitize(url.toString())}`);
+    this.log.debug(`Request URL: ${url.toString()}`);
 
     const resp = await fetch(url, {
       headers: { Authorization: this.authorizationHeader },
@@ -109,8 +112,8 @@ export class Exporter {
     } as RequestInit);
 
     const body = await resp.text();
-    log.debug(
-      `Status code ${resp.status} returned from endpoint: ${sanitize(this.endpoint)}`,
+    this.log.debug(
+      `Status code ${resp.status} returned from endpoint: ${this.endpoint}`,
     );
     return { status: resp.status, body, json: () => JSON.parse(body) as T };
   }
@@ -128,7 +131,7 @@ export class Exporter {
     } catch (error) {
       m.up.set(0);
       const message = error instanceof Error ? error.message : String(error);
-      log.error(message);
+      this.log.error(message);
       return {
         up: false,
         version: this.versionInfo?.version ?? null,
@@ -250,10 +253,10 @@ export class Exporter {
     datastore: DatastoreEntry,
     m: Metrics,
   ): Promise<void> {
-    log.debug(`--Store ${datastore.store}`);
-    log.debug(`--Avail ${datastore.avail}`);
-    log.debug(`--Total ${datastore.total}`);
-    log.debug(`--Used ${datastore.used}`);
+    this.log.debug(`--Store ${datastore.store}`);
+    this.log.debug(`--Avail ${datastore.avail}`);
+    this.log.debug(`--Total ${datastore.total}`);
+    this.log.debug(`--Used ${datastore.used}`);
 
     m.available.set({ datastore: datastore.store }, datastore.avail);
     m.size.set({ datastore: datastore.store }, datastore.total);
@@ -268,7 +271,7 @@ export class Exporter {
         resp.status === 400 &&
         /datastore is being deleted/i.test(resp.body)
       ) {
-        log.info(
+        this.log.info(
           `Datastore: ${datastore.store} is being deleted, Skip scrape datastore metric`,
         );
         return;
@@ -288,7 +291,7 @@ export class Exporter {
     namespace: string,
     m: Metrics,
   ): Promise<void> {
-    log.debug(`----Namespace ${namespace}`);
+    this.log.debug(`----Namespace ${namespace}`);
 
     const resp = await this.request<SnapshotResponse>(
       `${DATASTORE_API}/${datastore}/snapshots?ns=${namespace}`,

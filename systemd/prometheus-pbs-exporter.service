@@ -1,12 +1,13 @@
 [Unit]
 Description=Prometheus Proxmox Backup Server Exporter
-Documentation=https://github.com/natrontech/pbs-exporter
+Documentation=https://github.com/simonjur/pbs-exporter-node
 
 [Service]
 EnvironmentFile=/etc/pbs-exporter.env
 Restart=always
 User=pbs-exporter
-ExecStart=/opt/pbs-exporter/pbs-exporter-linux-amd64 -pbs.insecure ${INSECURE} -pbs.api.token ${TOKEN} -pbs.endpoint https://localhost:8007
+WorkingDirectory=/opt/pbs-exporter
+ExecStart=/usr/bin/node /opt/pbs-exporter/src/run.ts
 
 [Install]
 WantedBy=multi-user.target

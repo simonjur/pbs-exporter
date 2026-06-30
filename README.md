@@ -1,6 +1,6 @@
 # Proxmox Backup Server Exporter
 
-[![license](https://img.shields.io/github/license/natrontech/pbs-exporter)](https://github.com/natrontech/pbs-exporter/blob/main/LICENSE)
+[![license](https://img.shields.io/github/license/simonjur/pbs-exporter-node)](https://github.com/simonjur/pbs-exporter-node/blob/main/LICENSE)
 [![Built with Claude AI](https://img.shields.io/badge/Built%20with-Claude%20AI-D97757)](https://claude.ai/)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=simonjur_pbs-exporter&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=simonjur_pbs-exporter)
 [![Bugs](https://sonarcloud.io/api/project_badges/measure?project=simonjur_pbs-exporter&metric=bugs)](https://sonarcloud.io/summary/new_code?id=simonjur_pbs-exporter)
@@ -13,13 +13,52 @@
 [![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=simonjur_pbs-exporter&metric=sqale_index)](https://sonarcloud.io/summary/new_code?id=simonjur_pbs-exporter)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=simonjur_pbs-exporter&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=simonjur_pbs-exporter)
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=simonjur_pbs-exporter&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=simonjur_pbs-exporter)
-[![CodeQL](https://github.com/simonjur/pbs-exporter/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/simonjur/pbs-exporter/actions/workflows/github-code-scanning/codeql)
+[![CodeQL](https://github.com/simonjur/pbs-exporter-node/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/simonjur/pbs-exporter-node/actions/workflows/github-code-scanning/codeql)
 
 ---
 
 Export [Proxmox Backup Server](https://www.proxmox.com/en/proxmox-backup-server/overview) statistics to [Prometheus](https://prometheus.io/).
 
 Metrics are retrieved using the [Proxmox Backup Server API](https://pbs.proxmox.com/docs/api-viewer/index.html).
+
+> **Note:** This is a **Node.js (>= 24) / TypeScript** application — a rewrite of the
+> original Go exporter. It runs directly from TypeScript via Node's native type
+> stripping, so there is **no compile step** for the exporter itself. A small status
+> dashboard is served at `/` (the Prometheus metrics stay on the configured metrics
+> path); its assets are built into `public/` with `npm run build:fe`.
+
+## Running
+
+### With Docker (recommended)
+
+Multi-arch images (`linux/amd64`, `linux/arm64`) are published to the GitHub Container
+Registry:
+
+```bash
+docker run -p 10019:10019 \
+  -e PBS_ENDPOINT=https://your-pbs:8007 \
+  -e PBS_API_TOKEN=your-token \
+  ghcr.io/simonjur/pbs-exporter-node:alpha
+```
+
+Or use the provided [docker-compose.yaml](docker-compose.yaml) (see also
+[docker-compose.example.yaml](docker-compose.example.yaml)).
+
+### From source
+
+Requires **Node.js >= 24**.
+
+```bash
+npm ci                 # install dependencies
+npm run build:fe       # build the status-UI assets into public/ (required before start)
+npm start              # run with .env  (node --env-file=.env src/run.ts)
+
+# …or run directly, passing flags/env yourself:
+node src/run.ts --pbs.endpoint https://your-pbs:8007
+```
+
+Run `node src/run.ts --help` to see all flags, or `node src/run.ts --version` to print
+the build version and exit.
 
 ## Exported Metrics
 
@@ -56,14 +95,15 @@ Metrics are retrieved using the [Proxmox Backup Server API](https://pbs.proxmox.
 ## Flags / Environment Variables
 
 ```bash
-$ ./pbs-exporter -help
+$ node src/run.ts --help
 ```
 
 You can use the following flags to configure the exporter. All flags can also be set using environment variables. Environment variables take precedence over flags.
 
 | Flag                 | Environment Variable | Description                                          | Default                                                |
 | -------------------- | -------------------- | ---------------------------------------------------- | ------------------------------------------------------ |
-| `pbs.loglevel`       | `PBS_LOGLEVEL`       | Log level (debug, info)                              | `info`                                                 |
+| `pbs.loglevel`       | `PBS_LOGLEVEL`       | Log level (`debug`, `info`, …)                       | `info`                                                 |
+| `pbs.logformat`      | `PBS_LOGFORMAT`      | Log output format (`text`, `json`)                   | `text`                                                 |
 | `pbs.api.token`      | `PBS_API_TOKEN`      | API token to use for authentication                  |                                                        |
 | `pbs.api.token.name` | `PBS_API_TOKEN_NAME` | Name of the API token to use for authentication      | `pbs-exporter`                                         |
 | `pbs.endpoint`       | `PBS_ENDPOINT`       | Address of the Proxmox Backup Server                 | `http://localhost:8007` (if no parameter `target` set) |
@@ -74,33 +114,40 @@ You can use the following flags to configure the exporter. All flags can also be
 | `pbs.listen-address` | `PBS_LISTEN_ADDRESS` | Address to listen on for web interface and telemetry | `:10019`                                               |
 
 ### Running on PBS (systemd)
-The Prometheus-pbs-exporter can also simply be installed on a Proxmox Backup Server instead of spawning an additional Docker container.
 
-```
-# Download prometheus-pbs-exporter
-mkdir /opt/pbs-exporter
+The exporter can also be installed directly on a Proxmox Backup Server instead of
+spawning an additional Docker container. As there is no compiled binary, this runs the
+TypeScript source with Node.js (>= 24) — install Node on the host first
+(e.g. via [nodesource](https://github.com/nodesource/distributions)).
+
+```bash
+# Fetch the source into /opt/pbs-exporter
+git clone https://github.com/simonjur/pbs-exporter-node.git /opt/pbs-exporter
 cd /opt/pbs-exporter
-wget https://github.com/natrontech/pbs-exporter/releases/download/v0.6.4/pbs-exporter_v0.6.4_linux_amd64.tar.gz
-tar xfvz pbs-exporter_v0.6.4_linux_amd64.tar.gz
-cp pbs-exporter-linux-amd64 /bin/
+npm ci --omit=dev        # runtime dependencies only
+npm run build:fe         # build the status-UI assets into public/
 
-# Create a dedicated user for running the prometheus-pbs-exporter
+# Create a dedicated user for running the exporter
 useradd -m pbs-exporter -s /sbin/nologin
 
-# Download systemd unit file
-cd /etc/systemd/system
-wget https://raw.githubusercontent.com/natrontech/pbs-exporter/refs/heads/main/systemd/prometheus-pbs-exporter.service
-systemd daemon-reload
+# Install the systemd unit (see ./systemd/prometheus-pbs-exporter.service)
+cp systemd/prometheus-pbs-exporter.service /etc/systemd/system/
+systemctl daemon-reload
 
-# Create prometheus-pbs-exporter environment file (req. minimum the token)
+# Create the environment file (minimum: the API token)
 vi /etc/pbs-exporter.env
 # Add the token content and other options if required:
-TOKEN=beef-1337-cafe-beef-cafe-1337
+PBS_ENDPOINT=https://localhost:8007
+PBS_API_TOKEN=beef-1337-cafe-beef-cafe-1337
+PBS_INSECURE=true
 
 # Enable and start the service
 systemctl enable prometheus-pbs-exporter.service
 systemctl start prometheus-pbs-exporter.service
 ```
+
+The unit runs `node /opt/pbs-exporter/src/run.ts`; configure the exporter through
+`/etc/pbs-exporter.env` using the environment variables from the table above.
 
 ### Docker secrets
 
@@ -112,9 +159,9 @@ If you are using [Docker secrets](https://docs.docker.com/engine/swarm/secrets/)
 | `PBS_API_TOKEN_NAME_FILE` | Path to the API token name file |
 | `PBS_USERNAME_FILE`       | Path to the username file       |
 
-See an example of how to use Docker secrets with Docker Compose in the [docker-compose-secrets.yaml](docker-compose-secrets.yaml) file.
-
-The variables `PBS_API_TOKEN`, `PBS_API_TOKEN_NAME`, and `PBS_USERNAME` take precedence over the secret files.
+Each `*_FILE` variable points at a file whose **first line** is read as the value. The
+direct variables `PBS_API_TOKEN`, `PBS_API_TOKEN_NAME`, and `PBS_USERNAME` take
+precedence over their `*_FILE` counterparts.
 
 ## Multiple Proxmox Backup Servers
 
@@ -131,13 +178,23 @@ According to the [api documentation](https://pbs.proxmox.com/docs/api-viewer/ind
 
 ## Supported versions
 
-We have tested the exporter with Proxmox Backup Server version **3.X** (see [Proxmox Backup Server Roadmap](https://pbs.proxmox.com/wiki/index.php/Roadmap)). If you have already tested the exporter with a newer version, or have encountered problems, please let us know.
+This exporter has been developed and tested against Proxmox Backup Server **4.x** (the
+mocked API responses in the test suite are derived from a PBS 4.2 instance; see
+[Proxmox Backup Server Roadmap](https://pbs.proxmox.com/wiki/index.php/Roadmap)). If you
+have tested it with another version, or have encountered problems, please let us know.
 
 ## Release
 
-Each release of the application includes Go-binary archives, checksums file, SBOMs and container images. 
+The exporter is distributed as a multi-arch container image (`linux/amd64`,
+`linux/arm64`) published to the GitHub Container Registry at
+`ghcr.io/simonjur/pbs-exporter-node`. The [release workflow](.github/workflows/release.yml)
+builds and pushes:
 
-The release workflow creates provenance for its builds using the [SLSA standard](https://slsa.dev), which conforms to the [Level 3 specification](https://slsa.dev/spec/v1.2/build-track-basics#build-l3). Each artifact can be verified using the `slsa-verifier` or `cosign` tool (see [Release verification](SECURITY.md#release-verification)).
+- `:alpha` — on every push to `main`
+- `:v<version>` — on every `v*` git tag (e.g. `:v1.2.3`)
+
+Build metadata (version, commit, build time) is injected at image-build time and surfaced
+by `--version`.
 
 # TODO
 
